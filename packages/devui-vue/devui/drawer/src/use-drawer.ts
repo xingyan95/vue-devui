@@ -1,13 +1,15 @@
 import { computed, onUnmounted, ref, watch } from 'vue';
 import { onClickOutside } from '@vueuse/core';
 import { DrawerEmit, DrawerProps, UseDrawerFn } from './drawer-types';
-import { lockScroll } from '../../shared/util/lock-scroll';
+import { lockScroll } from '../../shared/utils/lock-scroll';
+import { useNamespace } from '../../shared/hooks/use-namespace';
 
 export function useDrawer(props: DrawerProps, emit: DrawerEmit): UseDrawerFn {
+  const ns = useNamespace('drawer');
   const drawerRef = ref<HTMLElement>();
   const drawerClasses = computed(() => ({
-    'devui-drawer': true,
-    [`devui-drawer-${props.position}`]: true,
+    [ns.b()]: true,
+    [ns.m(props.position)]: true,
   }));
   const close = () => {
     emit('update:modelValue', false);

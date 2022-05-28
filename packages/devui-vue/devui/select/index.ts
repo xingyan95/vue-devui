@@ -1,17 +1,15 @@
-import type { App } from 'vue'
-import Select from './src/select'
+import type { App } from 'vue';
+import Select from './src/select';
+import Option from './src/components/option';
 
-Select.install = function(app: App) {
-  app.component(Select.name, Select)
-}
-
-export { Select }
+export { Select, Option };
 
 export default {
   title: 'Select 下拉框',
   category: '数据录入',
   status: '10%',
   install(app: App): void {
-    app.use(Select as any)
-  }
-}
+    app.component(Select.name, Select);
+    app.component(Option.name, Option);
+  },
+};

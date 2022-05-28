@@ -1,13 +1,43 @@
 @import '../../style/mixins/size';
 @import '../../style/mixins/flex';
-@import '../../style/theme/color';
+@import '../../styles-var/devui-var.scss';
 
-.devui-search {
+.#{$devui-prefix}-search {
   position: relative;
   @include flex;
 
-  input {
-    padding: 5px 60px 5px 10px;
+  &:not(.#{$devui-prefix}-search--error):not(.#{$devui-prefix}-search--disabled):not(.#{$devui-prefix}-search--focus):hover {
+    .#{$devui-prefix}-input {
+      border-color: $devui-form-control-line-hover;
+    }
+  }
+
+  .#{$devui-prefix}-input {
+    padding: 4px 60px 4px 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid $devui-form-control-line;
+    border-radius: $devui-border-radius;
+    background-color: $devui-form-control-bg;
+    transition: border-color 0.3s $devui-animation-ease-in-out-smooth;
+
+    &__inner {
+      padding: 0;
+    }
+
+    &__wrapper {
+      border: none;
+      padding: 0;
+    }
+  }
+
+  &--focus {
+    .#{$devui-prefix}-input {
+      border-color: $devui-form-control-line-active;
+    }
   }
 
   svg.svg-icon-clear path,
@@ -39,7 +69,7 @@
   &__icon {
     pointer-events: all;
     cursor: pointer;
-    padding: 0 10px;
+    padding: 0 8px;
     position: absolute;
     z-index: 1;
     right: 0;
@@ -49,48 +79,54 @@
     @include flex;
   }
 
-  &__sm {
-    input {
-      &.devui-input-sm {
+  &--sm {
+    .#{$devui-prefix}-input {
+      &.#{$devui-prefix}-input--sm {
         padding-right: 56px;
       }
     }
 
-    .devui-search__icon {
+    .#{$devui-prefix}-search__icon {
       font-size: 14px;
       @include size(34px, 26px);
     }
 
-    .devui-search__clear {
+    .#{$devui-prefix}-search__clear {
       @include size(26px, 100%);
 
       right: 34px;
     }
   }
 
-  &__lg {
-    input {
-      padding: 5px 36px 5px 10px;
+  &--lg {
+    .#{$devui-prefix}-input {
+      padding: 4px 36px 4px 10px;
 
-      &.devui-input-lg {
-        padding-right: 71px;
+      &.#{$devui-prefix}-input--lg {
+        padding-right: 70px;
       }
     }
 
-    .devui-search__icon {
+    .#{$devui-prefix}-search__icon {
       font-size: 18px;
       @include size(46px, 46px);
     }
 
-    .devui-search__clear {
+    .#{$devui-prefix}-search__clear {
       @include size(30px, 100%);
 
       right: 46px;
     }
   }
 
-  &__disbaled {
-    .devui-search__icon {
+  &--disabled {
+    .#{$devui-prefix}-input {
+      cursor: not-allowed;
+      border-color: $devui-disabled-line;
+      background-color: $devui-disabled-bg;
+    }
+
+    .#{$devui-prefix}-search__icon {
       cursor: not-allowed;
     }
 
@@ -99,21 +135,21 @@
     }
   }
 
-  &__left {
-    input {
-      padding: 5px 26px 5px 30px;
+  &--left {
+    .#{$devui-prefix}-input {
+      padding: 4px 26px 4px 30px;
 
-      &.devui-input-lg {
-        padding-right: 30px;
-        padding-left: 46px;
+      &.#{$devui-prefix}-input--lg {
+        padding-right: 28px;
+        padding-left: 48px;
       }
 
-      &.devui-input-sm {
-        padding-right: 26px;
+      &.#{$devui-prefix}-input--sm {
+        padding-right: 24px;
       }
     }
 
-    .devui-search__clear {
+    .#{$devui-prefix}-search__clear {
       right: 0;
 
       &::after {
@@ -121,13 +157,13 @@
       }
     }
 
-    .devui-search__icon {
+    .#{$devui-prefix}-search__icon {
       left: 0;
     }
   }
 
-  &__no-border {
-    input {
+  &--no-border {
+    .#{$devui-prefix}-input {
       border: none;
     }
   }

@@ -1,55 +1,35 @@
-import { defineComponent, PropType } from 'vue';
+import { computed, defineComponent, toRefs } from 'vue';
+import { CardProps, cardProps } from './card-types';
+import { useNamespace } from '../../shared/hooks/use-namespace';
 import './card.scss';
-
-const cardProps = {
-  align: {
-    type: String as PropType<'start' | 'end' | 'spaceBetween'>,
-    default: 'start'
-  },
-  src: {
-    type: String,
-    default: ''
-  }
-} as const;
 
 export default defineComponent({
   name: 'DCard',
   props: cardProps,
+  setup(props: CardProps, { slots }) {
+    const { align, src } = toRefs(props);
+    const ns = useNamespace('card');
+    const alignClass = computed(() => {
+      return {
+        [ns.e('actions')]: true,
+        [ns.em('actions', `align-${align.value}`)]: align.value !== 'start',
+      };
+    });
 
-  render () {
-    const {
-      align,
-      src
-    } = this;
-    const alignCls = {
-      'd-card-actions':true,
-      'devui-card-actions': true,
-      [`devui-card-actions-align-${align}`]: align !== 'start',
-    };
-    return (
-      <div class="card-container devui-card">
-        {this.$slots.default?.()}
-        <div class="devui-card-header">
-        { this.$slots.cardAvatar?.()?<div class="devui-card-avatar">
-           {this.$slots.cardAvatar?.()}
-        </div>:'' }
-          <div class="devui-card-header-title-area">
-            <div class="devui-card-title">
-              {this.$slots.cardTitle?.()}
-            </div>
-            <div class="devui-card-subtitle">
-              {this.$slots.cardSubtitle?.()}
-            </div>
+    return () => (
+      <div class={['card-container', ns.b()]}>
+        {slots.default?.()}
+        <div class={ns.e('header')}>
+          {slots.avatar?.() ? <div class={ns.e('avatar')}>{slots.avatar?.()}</div> : ''}
+          <div>
+            <div class={ns.e('title')}>{slots.title?.()}</div>
+            <div class={ns.e('subtitle')}>{slots.subtitle?.()}</div>
           </div>
         </div>
-        {src!==''?<img src={src} alt="" class="devui-card-meta"/>:''}
-        <div class="devui-card-content" >
-          {this.$slots.cardContent?.()}
-        </div>
-        <div class={alignCls}>
-          {this.$slots.cardActions?this.$slots.cardActions?.():''}
-        </div>
+        {src.value !== '' ? <img src={src.value} alt="" class={ns.e('meta')} /> : ''}
+        <div class={ns.e('content')}>{slots.content?.()}</div>
+        <div class={alignClass.value}>{slots.actions ? slots.actions?.() : ''}</div>
       </div>
     );
-  }
+  },
 });

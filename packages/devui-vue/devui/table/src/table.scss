@@ -1,49 +1,133 @@
 @import '../../styles-var/devui-var.scss';
 
-.devui-table {
-  display: table;
-  table-layout: fixed;
+.#{$devui-prefix}-table {
+  position: relative;
   width: 100%;
-  border-spacing: 0;
-  border: none;
-  margin: 0;
-  padding: 0;
+  overflow-x: auto;
 
-  &-wrapper {
-    width: 100%;
-    overflow-x: auto;
-    padding-top: 8px;
+  .hidden-columns {
+    position: absolute;
+    visibility: hidden;
+    z-index: -1;
   }
 
-  &-striped {
+  &__view {
+    display: table;
+    table-layout: fixed;
+    width: 100%;
+    border-spacing: 0;
+    border-collapse: collapse;
+    border: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  &--striped {
     tbody tr:nth-child(even) {
       background-color: $devui-list-item-strip-bg;
     }
   }
 
-  &-empty {
-    width: 100%;
-    font-size: $devui-font-size;
-    text-align: center;
+  &__empty {
+    padding: 40px 0;
+    background-color: $devui-base-bg;
   }
 
-  &-view {
+  &__fix-header {
     display: flex;
     flex-direction: column;
     position: relative;
     height: 100%;
+  }
 
-    & .scroll-view {
-      flex: 1;
-      overflow: scroll;
+  &__scroll-view {
+    flex: 1;
+    overflow: scroll;
+  }
+
+  &--layout-auto {
+    table-layout: auto;
+  }
+
+  &--sm {
+    tbody > tr > td {
+      font-size: $devui-font-size-sm;
+      padding: 7px 20px 8px;
+
+      &.#{$devui-prefix}-table__checkable-cell {
+        padding: 8px;
+      }
     }
+
+    thead > tr > th.#{$devui-prefix}-table__checkable-cell {
+      padding: 8px;
+    }
+  }
+
+  &--md {
+    tbody > tr > td {
+      font-size: $devui-font-size-md;
+      padding: 11px 20px 12px;
+    }
+
+    thead > tr > th.#{$devui-prefix}-table__checkable-cell {
+      padding: 8px 20px;
+    }
+  }
+
+  &--lg {
+    tbody > tr > td {
+      font-size: $devui-font-size-lg;
+      padding: 15px 20px 16px;
+    }
+
+    thead > tr > th.#{$devui-prefix}-table__checkable-cell {
+      padding: 8px 20px;
+    }
+  }
+
+  &--borderless {
+    tbody > tr > td {
+      border-bottom: none;
+    }
+  }
+
+  &--bordered {
+    tr {
+      border-left: 1px solid $devui-dividing-line;
+
+      td {
+        border-right: 1px solid $devui-dividing-line;
+      }
+    }
+
+    thead {
+      tr {
+        th:first-child {
+          border-left: 1px solid $devui-dividing-line;
+        }
+
+        th {
+          border-top: 1px solid $devui-dividing-line;
+          border-right: 1px solid $devui-dividing-line;
+        }
+      }
+    }
+  }
+
+  .resize-bar {
+    display: none;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: $devui-form-control-line-active;
+    z-index: 9999;
+    cursor: col-resize;
   }
 }
 
-.table-layout-auto {
-  table-layout: auto;
-}
-
-.table-layout-auto {
-  table-layout: auto;
+.table-selector {
+  user-select: none;
+  cursor: col-resize;
 }

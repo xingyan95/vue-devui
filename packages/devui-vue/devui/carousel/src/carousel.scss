@@ -1,6 +1,4 @@
-@import '../../style/theme/color';
-@import '../../style/theme/shadow';
-@import '../../style/core/animation';
+@import '../../styles-var/devui-var.scss';
 
 @mixin fixed-arrow-button() {
   position: absolute;
@@ -25,11 +23,11 @@
   }
 }
 
-.devui-carousel-container {
+.#{$devui-prefix}-carousel {
   display: block;
   position: relative;
 
-  .devui-carousel-arrow {
+  .#{$devui-prefix}-carousel__arrow {
     position: absolute;
     width: 100%;
     top: 50%;
@@ -47,17 +45,17 @@
     }
   }
 
-  .devui-carousel-item-wrapper {
+  .#{$devui-prefix}-carousel__item-wrapper {
     position: relative;
     overflow: hidden;
     height: 100%;
 
-    .devui-carousel-item-container {
+    .#{$devui-prefix}-carousel__item-container {
       display: flex;
       height: 100%;
       position: relative;
 
-      .d-carousel-item {
+      .#{$devui-prefix}-carousel__item {
         flex: 1;
         position: relative;
         height: 100%;
@@ -65,7 +63,7 @@
     }
   }
 
-  .devui-carousel-dots {
+  .#{$devui-prefix}-carousel__dots {
     position: absolute;
     display: flex;
     justify-content: center;
@@ -101,8 +99,8 @@
   }
 }
 
-.devui-carousel-container {
-  .devui-carousel-arrow {
+.#{$devui-prefix}-carousel {
+  .#{$devui-prefix}-carousel__arrow {
     .arrow-left,
     .arrow-right {
       transition: background-color $devui-animation-duration-slow $devui-animation-ease-in-smooth;

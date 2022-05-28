@@ -23,6 +23,18 @@ export const tooltipProps = {
     type: Number,
     default: 100,
   },
+  enterable: {
+    type: Boolean,
+    default: true,
+  },
+  disabled: {
+    type: Boolean,
+    default: false,
+  },
+  hideAfter: {
+    type: Number,
+    default: 0,
+  }
 };
 
 export type TooltipProps = ExtractPropTypes<typeof tooltipProps>;
@@ -33,4 +45,7 @@ export type UseTooltipFn = {
   positionArr: ComputedRef<BasePlacement[]>;
   overlayStyles: ComputedRef<Record<string, string>>;
   onPositionChange: (pos: BasePlacement) => void;
+  onMouseenter: () => void;
+  onMouseleave: () => void;
+  onMouseenterOverlay: () => void;
 };

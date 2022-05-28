@@ -1,0 +1,63 @@
+@import '../../../../styles-var/devui-var.scss';
+
+.#{$devui-prefix}-table {
+  &__tbody {
+    tr {
+      font-size: $devui-font-size;
+      color: $devui-text;
+      background-color: $devui-base-bg;
+      border: none;
+
+      &.hover-enabled:hover {
+        background-color: $devui-list-item-hover-bg;
+      }
+
+      td .icon-expand-row:hover {
+        cursor: pointer;
+      }
+
+      &.expanded td .icon-expand-row {
+        transform: rotate(90deg);
+      }
+
+      td {
+        background-clip: padding-box;
+        vertical-align: middle;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 24px;
+        border: none;
+        border-bottom: 1px solid $devui-dividing-line;
+
+        &.is-left {
+          text-align: left;
+        }
+
+        &.is-center {
+          text-align: center;
+        }
+
+        &.is-right {
+          text-align: right;
+        }
+      }
+    }
+  }
+}
+
+.#{$devui-prefix}-table {
+  &--sticky-cell {
+    position: sticky;
+    z-index: 5;
+    background-color: inherit;
+
+    &.left {
+      box-shadow: rgba(0, 0, 0, 0.05) $devui-shadow-length-slide-right;
+    }
+
+    &.right {
+      box-shadow: rgba(0, 0, 0, 0.05) $devui-shadow-length-slide-left;
+    }
+  }
+}

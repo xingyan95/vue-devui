@@ -1,30 +1,18 @@
-import type { PropType, ExtractPropTypes, VNode } from 'vue'
-export interface IcommentProps {
-  [prop: string]: any
-}
+import type { ExtractPropTypes } from 'vue';
 
 export const commentProps = {
-  actions: {
-    type:Object as PropType<IcommentProps>,
-    default:null
-  },
   author: {
-    type:Object as PropType<IcommentProps>,
-    default:null
+    type: String,
+    default: '',
   },
   avatar: {
-    type:Object as PropType<IcommentProps>,
-    default:null
-  },
-  content: {
-    type:Object as PropType<IcommentProps>,
-    default:null
+    type: String,
+    default: '',
   },
   datetime: {
-    type:Object as PropType<IcommentProps>,
-    default:null
+    type: String,
+    default: '',
   },
+} as const;
 
-} as const
-
-export type CommentProps = ExtractPropTypes<typeof commentProps>
+export type CommentProps = ExtractPropTypes<typeof commentProps>;
