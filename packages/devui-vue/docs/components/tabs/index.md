@@ -257,6 +257,118 @@ export default defineComponent({
 
 :::
 
+### 添加/删除
+
+添加和删除选项卡
+
+### tabs
+
+:::demo
+
+```vue
+<template>
+  <d-tabs v-model="editableId" closeable addable @tab-add="tabAdd" @tab-remove="tabRemove" @tab-change="onTabChange">
+    <d-tab v-for="tab in tabs" :key="tab.id" :id="tab.id" :title="tab.title">
+      <p>{{ tab.title }} Content</p>
+    </d-tab>
+  </d-tabs>
+</template>
+<script>
+import { defineComponent, ref } from 'vue';
+
+export default defineComponent({
+  setup() {
+    const editableId = ref('tab1');
+    const tabs = ref([
+      { id: 'tab1', title: 'Tab1' },
+      { id: 'tab2', title: 'Tab2' },
+      { id: 'tab3', title: 'Tab3' },
+    ]);
+    const tabAdd = () => {
+      for (let i = 1; i <= tabs.value.length + 1; i++) {
+        if (!tabs.value.find((item) => item.id === `tab${i}`)) {
+          tabs.value.push({ id: `tab${i}`, title: `Tab${i}` });
+          break;
+        }
+      }
+    };
+    const tabRemove = (targetTab) => {
+      if (tabs.value.length === 1) {
+        return;
+      }
+      const tempTabs = tabs.value;
+      let activeName = editableId.value;
+
+      if (activeName === targetTab.id) {
+        tempTabs.forEach((tab, index) => {
+          if (tab.id === targetTab.id) {
+            const nextTab = tempTabs[index + 1] || tempTabs[index - 1];
+            if (nextTab) {
+              activeName = nextTab.id;
+            }
+          }
+        });
+      }
+
+      editableId.value = activeName;
+      tabs.value = tempTabs.filter((tab) => tab.id !== targetTab.id);
+    };
+
+    const onTabChange = (id, type) => {
+      console.log(id);
+      console.log(type);
+    };
+    return {
+      editableId,
+      tabs,
+      tabAdd,
+      tabRemove,
+      onTabChange,
+    };
+  },
+});
+</script>
+```
+
+:::
+
+### tab
+
+tab 的关闭按钮可单独控制，tabs 的 `closeable`属性为 true 时，tab 的`closeable`属性不生效。
+
+:::demo
+
+```vue
+<template>
+  <d-tabs v-model="soloEditableId">
+    <d-tab v-for="tab in soloTabs" :key="tab.id" :id="tab.id" :title="tab.title" :closeable="tab.closeable">
+      <p>{{ tab.title }} Content</p>
+    </d-tab>
+  </d-tabs>
+</template>
+<script>
+import { defineComponent, ref } from 'vue';
+
+export default defineComponent({
+  setup() {
+    const soloEditableId = ref('tab1');
+    const soloTabs = ref([
+      { id: 'tab1', title: 'Tab1', closeable: true },
+      { id: 'tab2', title: 'Tab2', closeable: true },
+      { id: 'tab3', title: 'Tab3', closeable: false },
+    ]);
+
+    return {
+      soloEditableId,
+      soloTabs,
+    };
+  },
+});
+</script>
+```
+
+:::
+
 ### 自定义模板
 
 :::demo
@@ -305,20 +417,26 @@ export default defineComponent({
 | vertical      | `boolean`               | false  | 可选，是否垂直显                                                                                            |
 | before-change | `function\|Promise`     | --     | tab 切换前的回调函数,返回 boolean 类型，返回 false 可以阻止 tab 的切换                                      |
 | reactivable   | `boolean`               | false  | 可选，点击当前处于激活态的 tab 时是否触发`active-tab-change`事件，<br>`true`为允许触发，`false`为不允许触发 |
+| closeable     | `boolean`               | false  | 可选，是否显示删除 tab 图标                                                                                 |
+| addable       | `boolean`               | false  | 可选，是否显示添加 tab 图标                                                                                 |
 
 ### Tabs 事件
 
-| 参数              | 类型                       | 说明                                                |
-| ----------------- | -------------------------- | --------------------------------------------------- |
-| active-tab-change | `function(string\|number)` | 可选，选项卡切换的回调函数，返回当前激活选项卡的 id |
+| 参数              | 类型                       | 说明                                                                               |
+| ----------------- | -------------------------- | ---------------------------------------------------------------------------------- |
+| active-tab-change | `function(string\|number)` | 可选，选项卡切换的回调函数，返回当前激活选项卡的 id                                |
+| tab-remove        | `function(tab, event)`     | 可选，点击 tab 移除按钮时触发， `tab`是删除的 tab 对象                             |
+| tab-add           | `function()`               | 可选，点击 tab 新增按钮时触发                                                      |
+| tab-change        | `function(string\|number)` | 可选，添加、删除 tab 的回调函数，返回操作的选项卡 id 和 operation（add \| delete） |
 
 ### Tab 参数
 
-| 参数     | 类型             | 默认  | 说明                                   |
-| -------- | ---------------- | ----- | -------------------------------------- |
-| id       | `number\|string` | --    | 可选，选项卡的 id 值, 需要设置为唯一值 |
-| title    | `string`         | --    | 可选，选项卡的标题                     |
-| disabled | `boolean`        | false | 可选，选项卡是否不可用                 |
+| 参数      | 类型             | 默认  | 说明                                                               |
+| --------- | ---------------- | ----- | ------------------------------------------------------------------ |
+| id        | `number\|string` | --    | 可选，选项卡的 id 值, 需要设置为唯一值                             |
+| title     | `string`         | --    | 可选，选项卡的标题                                                 |
+| disabled  | `boolean`        | false | 可选，选项卡是否不可用                                             |
+| closeable | `boolean`        | false | 可选，选项卡是否可关闭，tabs 的 closeable 为 true 时，该属性不生效 |
 
 ### Tab 插槽
 

@@ -1,23 +1,6 @@
-import { computed, toRefs } from 'vue';
 import type { EmitsOptions, SetupContext, ShallowRef } from 'vue';
-import { TabsProps, Active, TabsData } from '../../tabs-types';
-import { UseTabNavRender, OffSetData, UseTabNavFunction } from './tab-nav-types';
-import { useNamespace } from '../../../../shared/hooks/use-namespace';
-
-const ns = useNamespace('tabs');
-
-export function useTabNavRender(props: TabsProps): UseTabNavRender {
-  const { cssClass, vertical } = toRefs(props);
-
-  const ulClasses = computed(() => ({
-    [ns.e('nav')]: true,
-    [ns.em('nav', props.type)]: true,
-    [cssClass.value]: Boolean(cssClass.value),
-    [ns.e('stacked')]: vertical.value,
-  }));
-
-  return { ulClasses };
-}
+import { TabsProps, Active, TabsData } from '../../../tabs-types';
+import { OffSetData, UseTabNavFunction } from '../tab-nav-types';
 
 export function useTabNavFunction(
   props: TabsProps,
@@ -26,7 +9,20 @@ export function useTabNavFunction(
   ctx: SetupContext<EmitsOptions>,
   tabsEle: ShallowRef<HTMLUListElement | undefined>
 ): UseTabNavFunction {
-  const canChange = function (currentTab: Active) {
+  const update = () => {
+    if (props.type === 'slider') {
+      // 延时等待active样式切换至正确的tab
+      setTimeout(() => {
+        const tabEle = tabsEle.value.querySelector('#' + props.modelValue + '.active');
+        if (tabEle) {
+          data.offsetLeft = tabEle.getBoundingClientRect().left - tabsEle.value.getBoundingClientRect().left;
+          data.offsetWidth = tabEle.getBoundingClientRect().width;
+        }
+      });
+    }
+  };
+
+  const canChange = (currentTab: Active) => {
     let changeResult = Promise.resolve(true);
     if (typeof props.beforeChange === 'function') {
       const result: any = props.beforeChange(currentTab);
@@ -41,7 +37,7 @@ export function useTabNavFunction(
 
     return changeResult;
   };
-  const activeClick = function (item, tabEl?) {
+  const activeClick = (item, tabEl?) => {
     if (!props.reactivable && props.modelValue === item.id) {
       return;
     }
@@ -52,7 +48,6 @@ export function useTabNavFunction(
       const tab = tabs.state.data.find((itemOption) => itemOption.id === item.id);
       if (tab && !tab.disabled) {
         tabs.state.active = item.id;
-        ctx.emit('update:modelValue', tab.id);
         if (props.type === 'slider' && tabEl && tabsEle) {
           data.offsetLeft = tabEl.getBoundingClientRect().left - tabsEle.value.nativeElement.getBoundingClientRect().left;
           data.offsetWidth = tabEl.getBoundingClientRect().width;
@@ -62,5 +57,21 @@ export function useTabNavFunction(
     });
   };
 
-  return { activeClick };
+  const beforeMount = () => {
+    if (props.type !== 'slider' && props.modelValue === undefined && tabs.state.data.length > 0) {
+      activeClick(tabs.state.data[0]);
+    }
+  };
+
+  const mounted = () => {
+    if (props.type === 'slider' && props.modelValue === undefined && tabs.state.data.length > 0 && tabs.state.data[0]) {
+      activeClick(tabs.state.data[0].tabsEle.value.getElementById(tabs.state.data[0].tabId));
+    }
+  };
+
+  const tabCanClose = (item) => {
+    return (props.closeable || item.closeable) && !item.disabled;
+  };
+
+  return { update, activeClick, beforeMount, mounted, tabCanClose };
 }

@@ -1,14 +1,15 @@
-import { defineComponent, provide, reactive } from 'vue';
+import { defineComponent, provide, reactive, SetupContext, watch } from 'vue';
 import { TabsData, tabsProps, TabsState, TabsProps } from './tabs-types';
 import { useNamespace } from '../../shared/hooks/use-namespace';
 import './tabs.scss';
 import TabNav from './components/tab-nav/tab-nav';
+import { useTabsEvent } from './use-tabs';
 
 export default defineComponent({
   name: 'DTabs',
   props: tabsProps,
-  emits: ['update:modelValue', 'active-tab-change'],
-  setup(props: TabsProps, { emit, slots }) {
+  emits: ['update:modelValue', 'active-tab-change', 'tab-remove', 'tab-add', 'tab-change'],
+  setup(props: TabsProps, ctx: SetupContext) {
     const ns = useNamespace('tabs');
     const state: TabsState = reactive({
       data: [],
@@ -18,17 +19,26 @@ export default defineComponent({
     });
     provide<TabsData>('tabs', { state });
 
-    const updateModelValue = (value: string) => {
-      emit('update:modelValue', value);
-    };
-    const activeTabChange = (value: string) => {
-      emit('active-tab-change', value);
-    };
+    const { onUpdateModelValue, onActiveTabChange, onTabRemove, onTabAdd, onTabChange } = useTabsEvent(ctx);
+
+    watch(
+      () => state.active,
+      () => {
+        onUpdateModelValue(state.active);
+      }
+    );
+
     return () => {
       return (
         <div class={ns.b()}>
-          <TabNav {...props} onUpdate:modelValue={updateModelValue} onActiveTabChange={activeTabChange} />
-          {slots.default?.()}
+          <TabNav
+            {...props}
+            onActiveTabChange={onActiveTabChange}
+            onTabRemove={onTabRemove}
+            onTabAdd={onTabAdd}
+            onTabChange={onTabChange}
+          />
+          {ctx.slots.default?.()}
         </div>
       );
     };

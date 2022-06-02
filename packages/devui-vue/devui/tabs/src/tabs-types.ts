@@ -8,7 +8,7 @@ export interface TabsState {
   data?: any[];
   showContent: boolean;
   active: string | number;
-  slots: Slot[];
+  slots: any[];
 }
 
 export interface TabsData {
@@ -49,6 +49,22 @@ export const tabsProps = {
     type: Function as PropType<(id: Active) => boolean>,
     default: null,
   },
+  closeable: {
+    type: Boolean,
+    default: false,
+  },
+  addable: {
+    type: Boolean,
+    default: false,
+  },
 } as const;
 
 export type TabsProps = ExtractPropTypes<typeof tabsProps>;
+
+export interface UseTabsEvent {
+  onUpdateModelValue: (value: string | number) => void;
+  onActiveTabChange: (value: string) => void;
+  onTabRemove: (item: any, ev: MouseEvent) => void;
+  onTabAdd: () => void;
+  onTabChange: (id: string | undefined, type: string) => void;
+}
