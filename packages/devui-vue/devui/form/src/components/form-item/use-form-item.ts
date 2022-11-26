@@ -1,5 +1,5 @@
 import { computed, inject, nextTick, onMounted, ref } from 'vue';
-import { castArray, get, isFunction, cloneDeep } from 'lodash';
+import { castArray, get, isFunction, clone, isEqual, set } from 'lodash';
 import Schema from 'async-validator';
 import type { ComputedRef, Ref } from 'vue';
 import type { RuleItem } from 'async-validator';
@@ -12,8 +12,20 @@ import {
   FormRuleItem,
   UseFormItemValidate,
   MessageType,
+  UseFormItemRule
 } from './form-item-types';
 import { useNamespace } from '../../../../shared/hooks/use-namespace';
+
+function getFieldValue(obj: Record<string, unknown>, path: string) {
+  return {
+    get value() {
+      return get(obj, path);
+    },
+    set value(val: unknown) {
+      set(obj, path, val);
+    },
+  };
+}
 
 export function useFormItem(
   messageType: ComputedRef<MessageType>,
@@ -34,7 +46,7 @@ export function useFormItem(
   return { itemClasses, isRequired };
 }
 
-export function useFormItemRule(props: FormItemProps) {
+export function useFormItemRule(props: FormItemProps): UseFormItemRule {
   const formContext = inject(FORM_TOKEN) as FormContext;
   const _rules = computed(() => {
     const rules = (props.rules ? castArray(props.rules) : []) as FormRuleItem[];
@@ -61,22 +73,17 @@ export function useFormItemValidate(props: FormItemProps, _rules: ComputedRef<Fo
   const formContext = inject(FORM_TOKEN) as FormContext;
   const validateState = ref<FormItemValidateState>('');
   const validateMessage = ref('');
-  let initFieldValue: any = undefined;
+  let initFieldValue: unknown = undefined;
   let isResetting = false;
   const computedField = computed(() => {
     return typeof props.field === 'string' ? props.field : '';
   });
-  const fieldValue = computed({
-    get: () => {
-      const formData = formContext.data;
-      if (!formData || !props.field) {
-        return;
-      }
-      return formData[props.field];
-    },
-    set: (val) => {
-      formContext.data[props.field] = val;
-    },
+  const fieldValue = computed(() => {
+    const formData = formContext.data;
+    if (!formData || !props.field) {
+      return;
+    }
+    return getFieldValue(formData, props.field).value;
   });
 
   const getRuleByTrigger = (triggerVal: string) => {
@@ -91,7 +98,7 @@ export function useFormItemValidate(props: FormItemProps, _rules: ComputedRef<Fo
           return rule.trigger === triggerVal;
         }
       })
-      .map(({ trigger, ...rule }) => rule);
+      .map(({ ...rule }) => rule);
   };
 
   const onValidateSuccess = () => {
@@ -157,15 +164,18 @@ export function useFormItemValidate(props: FormItemProps, _rules: ComputedRef<Fo
     if (!formContext.data || !props.field) {
       return;
     }
-    isResetting = true;
-    fieldValue.value = initFieldValue;
+    const currentValue = getFieldValue(formContext.data, props.field);
+    if (!isEqual(currentValue.value, initFieldValue)) {
+      isResetting = true;
+    }
+    currentValue.value = initFieldValue;
 
     await nextTick();
     clearValidate();
   };
 
   onMounted(() => {
-    initFieldValue = cloneDeep(formContext.data[props.field]);
+    initFieldValue = clone(fieldValue.value);
   });
 
   return { validateState, validateMessage, validate, resetField, clearValidate };

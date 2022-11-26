@@ -3,17 +3,18 @@ import { TableStore } from './store/store-types';
 
 export type TableSize = 'sm' | 'md' | 'lg';
 export type BorderType = '' | 'bordered' | 'borderless';
+export type RowKeyType = string | ((v: Record<string, unknown>, index?: number | undefined) => string);
 
 export type SpanMethod = (data: {
-  row: any;
-  column: any;
+  row: unknown;
+  column: unknown;
   rowIndex: number;
   columnIndex: number;
 }) => number[] | { rowspan: number; colspan: number };
 
-export const TableProps = {
+export const tableProps = {
   data: {
-    type: Array as PropType<Record<string, any>[]>,
+    type: Array as PropType<Record<string, unknown>[]>,
     default: [],
   },
   striped: {
@@ -86,20 +87,33 @@ export const TableProps = {
     default: true,
   },
   rowKey: {
-    type: String,
+    type: [Function as PropType<(v: Record<string, unknown>, index?: number | undefined) => string>, String],
+    default: 'id',
   },
-  trackBy: {
-    type: Function as PropType<(v: Record<string, any>) => string>,
-  }
+  defaultExpandAll: {
+    type: Boolean,
+    default: false,
+  },
+  expandRowKeys: {
+    type: Array as PropType<string[]>,
+  },
+  indent: {
+    type: Number,
+    default: 16,
+  },
+  lazy: {
+    type: Boolean,
+    default: false,
+  },
 };
 
-export type TablePropsTypes = ExtractPropTypes<typeof TableProps>;
+export type TableProps = ExtractPropTypes<typeof tableProps>;
 
-export type DefaultRow = TablePropsTypes['data'][number];
+export type DefaultRow = TableProps['data'][number];
 
-export interface Table<T = DefaultRow> extends ComponentInternalInstance {
+export interface ITable<T = DefaultRow> extends ComponentInternalInstance {
   store: TableStore<T>;
-  props: TablePropsTypes;
+  props: TableProps;
   tableId: string;
   hiddenColumns: Ref<HTMLElement | null>;
   tableRef: Ref<HTMLElement>;
@@ -116,7 +130,7 @@ export interface Table<T = DefaultRow> extends ComponentInternalInstance {
 //   open: boolean; // 子表格是否展开
 // }
 
-export interface TableMethods<T = Record<string, any>> {
+export interface TableMethods<T = Record<string, unknown>> {
   getCheckedRows(): T[];
   // setRowCheckStatus(arg: TableCheckStatusArg): void
   // setTableCheckStatus(arg: RowToggleStatusEventArg): void
@@ -125,7 +139,7 @@ export interface TableMethods<T = Record<string, any>> {
   // cancelEditingStatus(): void
 }
 
-export const TABLE_TOKEN: InjectionKey<Table> = Symbol();
+export const TABLE_TOKEN: InjectionKey<ITable> = Symbol();
 
 export interface UseTable {
   classes: ComputedRef<Record<string, boolean>>;
@@ -138,3 +152,6 @@ export interface UseTableLayout {
   tableWidth: Ref;
   updateColumnWidth: () => void;
 }
+
+
+export type ITableInstanceAndDefaultRow = ComponentInternalInstance & ITable<DefaultRow>;

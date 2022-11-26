@@ -1,12 +1,15 @@
 import { mount } from '@vue/test-utils';
+import { useNamespace } from '../../shared/hooks/use-namespace';
 import { reactive, ref } from 'vue';
-import { EditableSelect } from '../index';
+import { EditableSelect, OptionObjectItem } from '../index';
+const ns = useNamespace('editable-select', true);
+
 const createData = (len = 5) => {
   return reactive(
     Array.from({ length: len }).map((_, index) => {
       return {
         label: `label${index}`,
-        value: index
+        value: index,
       };
     })
   );
@@ -20,13 +23,13 @@ describe('editable-select test', () => {
   test('create', () => {
     const wrapper = mount(EditableSelect);
 
-    expect(wrapper.find('.devui-editable-select').exists()).toBe(true);
+    expect(wrapper.find(`${ns.b()}`).exists()).toBe(true);
   });
 
   test('should render correctly', async () => {
     const wrapper = mount({
       components: {
-        'editable-select': EditableSelect
+        'editable-select': EditableSelect,
       },
       template: `<editable-select v-model="value" :options="options"></editable-select>`,
       setup() {
@@ -34,21 +37,21 @@ describe('editable-select test', () => {
         const options = createData();
         return {
           value,
-          options
+          options,
         };
-      }
+      },
     });
 
     const input = wrapper.find('input');
-
     expect(wrapper.find('.devui-dropdown-item').exists()).toBeFalsy();
 
     await input.trigger('click');
+    const flexibleOverlay = wrapper.getComponent({ name: 'DFlexibleOverlay' });
 
-    expect(wrapper.find('.devui-dropdown-item').exists()).toBeTruthy();
-    expect(wrapper.classes()).toContain('devui-select-open');
+    expect(flexibleOverlay.find(`.devui-dropdown-item`).exists()).toBeTruthy();
+    expect(wrapper.classes()).toContain('devui-editable-select--open');
 
-    const options = wrapper.findAll('.devui-dropdown-item');
+    const options = flexibleOverlay.findAll(`.devui-dropdown-item`);
 
     expect(options.length).toBe(5);
   });
@@ -56,7 +59,7 @@ describe('editable-select test', () => {
   test('select on click ', async () => {
     const wrapper = mount({
       components: {
-        'editable-select': EditableSelect
+        'editable-select': EditableSelect,
       },
       template: `<editable-select v-model="value" :options="options"></editable-select>`,
       setup() {
@@ -64,26 +67,30 @@ describe('editable-select test', () => {
         const options = createData();
         return {
           value,
-          options
+          options,
         };
-      }
+      },
     });
 
     const input = wrapper.find('input');
     await input.trigger('click');
 
-    const options = wrapper.find('.devui-dropdown-item');
+    const flexibleOverlay = wrapper.getComponent({ name: 'DFlexibleOverlay' });
+
+    const options = flexibleOverlay.find(`.devui-dropdown-item`);
+
     await options.trigger('click');
 
     expect(wrapper.find('input').element.value).toBe('label0');
+    expect(wrapper.vm.value).toBe('0');
   });
 
   test('disabled select', async () => {
     const wrapper = mount({
       components: {
-        'editable-select': EditableSelect
+        'editable-select': EditableSelect,
       },
-      template: `<editable-select disabled></editable-select>`
+      template: `<editable-select disabled></editable-select>`,
     });
     expect(wrapper.find('input').element.disabled).toBe(true);
   });
@@ -91,55 +98,58 @@ describe('editable-select test', () => {
   test('disabled option', async () => {
     const wrapper = mount({
       components: {
-        'editable-select': EditableSelect
+        'editable-select': EditableSelect,
       },
-      template: `<editable-select v-model="value" :options="options" option-disabled-key="disabled"></editable-select>`,
+      template: `<editable-select v-model="value" :options="options" disabled-key="disabled"></editable-select>`,
       setup() {
         const value = ref('');
         const options = reactive([
           {
             label: 'label0',
-            value: 0
+            value: 0,
           },
           {
             label: 'label1',
             value: 1,
-            disabled: true
+            disabled: true,
           },
           {
             label: 'label2',
             value: 2,
-            disabled: false
-          }
+            disabled: false,
+          },
         ]);
         return {
           value,
-          options
+          options,
         };
-      }
+      },
     });
 
     const input = wrapper.find('input');
     await input.trigger('click');
 
-    const options = wrapper.findAll('.devui-dropdown-item');
+    const flexibleOverlay = wrapper.getComponent({ name: 'DFlexibleOverlay' });
+    const options = flexibleOverlay.findAll(`.devui-dropdown-item`);
 
     expect(options[1].classes()).toContain('disabled');
 
     await options[1].trigger('click');
 
     expect(wrapper.find('input').element.value).toBe('');
+    expect(wrapper.vm.value).toBe('');
 
     await options[2].trigger('click');
 
     expect(wrapper.find('input').element.value).toBe('label2');
+    expect(wrapper.vm.value).toBe('2');
   });
 
   test('search', async () => {
     const handleSearch = jest.fn();
     const wrapper = mount({
       components: {
-        'editable-select': EditableSelect
+        'editable-select': EditableSelect,
       },
       template: `<editable-select v-model="value" :options="options" @search="handleSearch"></editable-select>`,
       setup() {
@@ -148,9 +158,9 @@ describe('editable-select test', () => {
         return {
           value,
           options,
-          handleSearch
+          handleSearch,
         };
-      }
+      },
     });
     const input = wrapper.find('input');
     await input.setValue('label');
@@ -161,7 +171,7 @@ describe('editable-select test', () => {
   test('filter option', async () => {
     const wrapper = mount({
       components: {
-        'editable-select': EditableSelect
+        'editable-select': EditableSelect,
       },
       template: `<editable-select v-model="value" :options="options" filter-option></editable-select>`,
       setup() {
@@ -169,43 +179,49 @@ describe('editable-select test', () => {
         const options = createData();
         return {
           value,
-          options
+          options,
         };
-      }
+      },
     });
     const input = wrapper.find('input');
     await input.setValue('label0');
     await input.trigger('click');
-    expect(wrapper.findAll('.devui-dropdown-item').length).toBe(1);
+    const flexibleOverlay = wrapper.getComponent({ name: 'DFlexibleOverlay' });
+    expect(flexibleOverlay.findAll(`.devui-dropdown-item`).length).toBe(1);
   });
 
   test('custom filter options', async () => {
-    const filterOption = jest.fn();
-    const wrapper = mount({
+    const wrapper = mount(EditableSelect, {
       components: {
-        'editable-select': EditableSelect
+        'editable-select': EditableSelect,
       },
       template: `<editable-select v-model="value" :options="options" :filter-option="filterOption"></editable-select>`,
       setup() {
         const value = ref('');
         const options = createData();
+        const filterOption = (inputValue: string, option: OptionObjectItem) => option.label.indexOf(inputValue) > -1;
         return {
           value,
           options,
-          filterOption
+          filterOption,
         };
-      }
+      },
     });
     const input = wrapper.find('input');
-    await input.setValue('label0');
+
+    input.setValue('label0');
+
     await input.trigger('click');
-    expect(filterOption).toBeCalled();
+    const flexibleOverlay = wrapper.getComponent({ name: 'DFlexibleOverlay' });
+    expect(flexibleOverlay.findAll(`.devui-dropdown-item`).length).toBe(1);
+
+    expect(flexibleOverlay.find(`.devui-dropdown-item`).text()).toBe('label0');
   });
 
   test('render slot', async () => {
     const wrapper = mount({
       components: {
-        'editable-select': EditableSelect
+        'editable-select': EditableSelect,
       },
       template: `<editable-select v-model="value" :options="options">
                     <template #item="slotProps">
@@ -222,16 +238,17 @@ describe('editable-select test', () => {
         const options = createData();
         return {
           value,
-          options
+          options,
         };
-      }
+      },
     });
     const input = wrapper.find('input');
     await input.trigger('click');
-    const options = wrapper.findAll('.devui-dropdown-item');
+    const flexibleOverlay = wrapper.getComponent({ name: 'DFlexibleOverlay' });
+    const options = flexibleOverlay.findAll(`.devui-dropdown-item`);
     expect(options.length).toBe(5);
     await input.setValue('aaa');
-    expect(wrapper.find('#noResultItemTemplate').element.textContent).toBe('暂无数据');
+    expect(flexibleOverlay.find('#noResultItemTemplate').element.textContent).toBe('暂无数据');
   });
 
   test('load more ', async () => {
@@ -242,33 +259,33 @@ describe('editable-select test', () => {
       const evt = new CustomEvent('scroll', {
         detail: {
           target: {
-            [name]: offset
-          }
-        }
+            [name]: offset,
+          },
+        },
       });
       eventTarget.dispatchEvent(evt);
     };
     const wrapper = mount({
       components: {
-        'editable-select': EditableSelect
+        'editable-select': EditableSelect,
       },
-      template: `<editable-select v-model="value" :options="options" @loadMore="handleLoad" :maxHeight="300" ></editable-select>`,
+      template: `<editable-select v-model="value"  enable-lazy-load  :options="options" @loadMore="handleLoad" :maxHeight="300" >
+      </editable-select>`,
       setup() {
         const value = ref('');
         const options = createData(20);
         return {
           value,
           options,
-          handleLoad: loadmore
+          handleLoad: loadmore,
         };
-      }
+      },
     });
 
     const input = wrapper.find('input');
     await input.trigger('click');
-
-    const ul = wrapper.find('.devui-list-unstyled');
-
+    const flexibleOverlay = wrapper.getComponent({ name: 'DFlexibleOverlay' });
+    const ul = flexibleOverlay.find(`.devui-editable-select__list--unstyled`);
     await makeScroll(ul.element, 'scrollTop', 300);
 
     expect(loadmore).toBeCalled();
@@ -277,7 +294,7 @@ describe('editable-select test', () => {
   test('keyboard operations', async () => {
     const wrapper = mount({
       components: {
-        'editable-select': EditableSelect
+        'editable-select': EditableSelect,
       },
       template: `<editable-select v-model="value" :options="options"></editable-select>`,
       setup() {
@@ -285,9 +302,9 @@ describe('editable-select test', () => {
         const options = createData();
         return {
           value,
-          options
+          options,
         };
-      }
+      },
     });
     const input = wrapper.find('input');
     await input.trigger('click');
@@ -295,5 +312,50 @@ describe('editable-select test', () => {
     await input.trigger('keydown', { key: 'ArrowDown' });
     await input.trigger('keydown', { key: 'Enter' });
     expect(input.element.value).toBe('label2');
+    expect(wrapper.vm.value).toBe('2');
+  });
+
+  test('allow-clear', async () => {
+    const wrapper = mount({
+      components: {
+        'editable-select': EditableSelect,
+      },
+      template: `<editable-select v-model="value" :options="options"></editable-select>`,
+      setup() {
+        const value = ref('');
+        const options = createData();
+        return {
+          value,
+          options,
+        };
+      },
+    });
+
+    const input = wrapper.find('input');
+    await input.trigger('click');
+
+    const flexibleOverlay = wrapper.getComponent({ name: 'DFlexibleOverlay' });
+
+    const options = flexibleOverlay.findAll(`.devui-dropdown-item`);
+
+    await options[0].trigger('click');
+
+    expect(wrapper.find('input').element.value).toBe('label0');
+    expect(wrapper.vm.value).toBe('0');
+
+    const removeIcon = wrapper.find('.icon-remove');
+    await removeIcon.trigger('click');
+
+    expect(wrapper.find('input').element.value).toBe('');
+    expect(wrapper.vm.value).toBe('');
+
+    await options[1].trigger('click');
+    expect(wrapper.find('input').element.value).toBe('label1');
+    expect(wrapper.vm.value).toBe('1');
+
+    await removeIcon.trigger('click');
+
+    expect(wrapper.find('input').element.value).toBe('');
+    expect(wrapper.vm.value).toBe('');
   });
 });

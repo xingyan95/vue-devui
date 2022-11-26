@@ -49,7 +49,7 @@ export interface IFileResponse<T = unknown> {
 }
 
 type DynamicUploadOptionsFn = (files: unknown, uploadOptions: unknown) => IUploadOptions;
-type ChangeFn = (_: unknown) => void;
+type ChangeFn = (files: File[], uploadFiles: File[]) => void;
 type BeforeUploadFn = (file: UnwrapRef<FileUploader[]>) => boolean | Promise<boolean>;
 
 export const uploadProps = {
@@ -75,7 +75,7 @@ export const uploadProps = {
   },
   placeholder: {
     type: String,
-    default: '选择文件',
+    default: '',
   },
   modelValue: {
     type: Array as PropType<File[]>,
@@ -115,17 +115,37 @@ export const uploadProps = {
     type: Function as PropType<(v: string) => void>,
     default: undefined,
   },
-  'on-error': {
+  onError: {
     type: Function as PropType<(v: { file: File; response: unknown }) => void>,
     default: undefined,
   },
-  'on-success': {
+  onSuccess: {
     type: Function as PropType<(v: { file: File; response: unknown }[]) => void>,
+    default: undefined,
+  },
+  onExceed: {
+    type: Function as PropType<(files: File[], uploadFiles: File[]) => void>,
+    default: undefined,
+  },
+  onProgress: {
+    type: Function as PropType<(files: File[], uploadFiles: File[]) => void>,
+    default: undefined,
+  },
+  onPreview: {
+    type: Function as PropType<(file: File) => void>,
     default: undefined,
   },
   oneTimeUpload: {
     type: Boolean,
     default: false,
+  },
+  limit: {
+    type: Number,
+    default: 0,
+  },
+  httpRequest: {
+    type: Function as PropType<(files: File[]) => void>,
+    default: undefined,
   },
 } as const;
 

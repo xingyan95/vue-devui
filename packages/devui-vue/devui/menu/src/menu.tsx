@@ -1,76 +1,131 @@
-import {
-  defineComponent,
-  provide,
-  ref,
-  computed,
-  onMounted,
-  watchEffect,
-  Ref
-} from 'vue';
-import { menuProps, MenuProps } from './types/menu-types';
+import { defineComponent, provide, ref, computed, onMounted, toRefs, reactive } from 'vue';
+import type { ComponentPublicInstance } from 'vue';
+import { menuProps, MenuProps } from './menu-types';
 import './menu.scss';
-import {setDefaultIndent} from './helper/layer-composables';
-import SubMenu from './components/sub-menu';
+import { setDefaultIndent } from './composables/use-layer-operate';
+import SubMenu from './components/sub-menu/sub-menu';
+import { useNamespace } from '../../shared/hooks/use-namespace';
+import { useShowSubMenu } from './components/sub-menu/use-sub-menu';
+import { randomId } from '../../shared/utils';
+import { useStore } from './composables/use-store';
 
 export default defineComponent({
   name: 'DMenu',
   props: menuProps,
-  emits: ['select','dselect', 'submenu-change'],
+  emits: ['select', 'deselect', 'submenu-change'],
   setup(props: MenuProps, ctx) {
-    const isCollapsed = computed(()=>props.collapsed);
-    const mode = computed(()=>props['mode']);
-    provide('isCollapsed',isCollapsed);
+    const ns = useNamespace('menu');
+    const {openKeys, mode, collapsed} = toRefs(props);
+    // This ID is only for internal use. So we unwanted use reactivity
+    const menuId = randomId(16);
+    // register menu to recordTable.
+    const store = useStore(menuId);
+    provide('menuStore', store);
+    provide('isCollapsed', collapsed);
     provide('defaultIndent', props['indentSize']);
     provide('multiple', props['multiple']);
-    provide('openKeys', props.openKeys);
-    provide('defaultSelectKey',props.defaultSelectKeys);
+    provide('openKeys', openKeys);
+    provide('defaultSelectKey', props.defaultSelectKeys);
     provide('mode', mode);
-    provide('collapsedIndent', ref(props['collapsedIndent']));
+    provide('collapsedIndent', props['collapsedIndent']);
     provide('rootMenuEmit', ctx.emit);
+    provide('useRouter', props.router);
     setDefaultIndent(props['indentSize']);
     const menuRoot = ref(null);
-    const overflow_container = ref(null);
     const overflowItemLength = ref(0);
-    onMounted(()=>{
-      //
-      if (props['mode'] === 'horizontal'){
-        const overflowContainer = overflow_container.value?.$el as unknown as HTMLElement;
+    const overflowContainer = ref<ComponentPublicInstance | null>(null);
+    const selectClassName = `${ns.b()}-item-select`;
+    const rootClassName = computed(()=>({
+      [`${ns.b()}`]: true,
+      [`${ns.b()}-vertical`]: mode.value === 'vertical',
+      [`${ns.b()}-horizontal`]: mode.value === 'horizontal',
+      [`${ns.b()}-collapsed`]: collapsed.value
+    }));
+    const overflowContainerClassName = reactive({
+      [selectClassName]: false,
+      [`${ns.b()}-overflow-container`]: true
+    });
+    // 如果一个或多个菜单元素被选中，当宽度发生变化时。如果溢出容易中有被选中的元素，那么溢出容器也应当被选中
+    const resetOverflowContainerSelectState = (e: Element) => {
+      const children = Array.from(e.children);
+      for (const item of children){
+        if (item.classList.contains(selectClassName)){
+          overflowContainerClassName[selectClassName] = true;
+          break;
+        } else {
+          overflowContainerClassName[selectClassName] = false;
+        }
+      }
+    };
+    onMounted(() => {
+      if (props['mode'] === 'horizontal') {
+        let flag = false;
+        const overflowContainerElement = overflowContainer.value?.$el as unknown as HTMLElement;
         const root = menuRoot.value as unknown as HTMLElement;
         const children = root.children;
-        const container = overflowContainer.children[1];
-        const ob = new IntersectionObserver((entries: IntersectionObserverEntry[])=>{
-          entries.forEach((v: IntersectionObserverEntry)=>{
-            if (!v.isIntersecting){
-              if (!v.target.classList.contains('devui-menu-overflow-container')){
-                overflowItemLength.value += 1;
-                const cloneNode = v.target.cloneNode(true) as Element as HTMLElement;
-                (v.target as Element as HTMLElement).style.visibility = 'hidden';
-                if (overflowContainer.nextSibling){
-                  root.insertBefore(v.target, overflowContainer.nextSibling);
+        const container = overflowContainerElement.children[1];
+        const ob = new IntersectionObserver(
+          (entries: IntersectionObserverEntry[]) => {
+            entries.forEach((entry: IntersectionObserverEntry) => {
+              if (!entry.isIntersecting) {
+                const cloneNode = entry.target.cloneNode(true) as Element as HTMLElement;
+                if (entry.target.classList.contains(`${ns.b()}-overflow-container`)){
+                  if (flag && entry.target.previousElementSibling && container.children.length){
+                    root.appendChild(entry.target.previousElementSibling);
+                  } else {flag = true;}
                 } else {
-                  root.appendChild(v.target);
+                  overflowItemLength.value += 1;
+                  (entry.target as Element as HTMLElement).style.visibility = 'hidden';
+                  if (overflowContainerElement.nextSibling) {
+                    root.insertBefore(entry.target, overflowContainerElement.nextSibling);
+                  } else {
+                    root.appendChild(entry.target);
+                  }
+                  container.appendChild(cloneNode);
+                  resetOverflowContainerSelectState(container);
                 }
-                container.appendChild(cloneNode);
-              }
-            } else {
-              if (!v.target.classList.contains('devui-menu-overflow-container') && (v.target as HTMLElement).style.visibility === 'hidden'){
-                ob.unobserve(v.target);
-                root.insertBefore(container.children[container.children.length-1], overflowContainer);
-                const obItem = overflowContainer.previousElementSibling;
-                if (obItem){
-                  ob.observe(obItem);
+              } else {
+                if (
+                  !entry.target.classList.contains(`${ns.b()}-overflow-container`) &&
+                  (entry.target as HTMLElement).style.visibility === 'hidden'
+                ) {
+                  ob.unobserve(entry.target);
+                  root.insertBefore(entry.target, overflowContainerElement);
+                  (entry.target as HTMLElement).style.visibility = '';
+                  const obItem = overflowContainerElement.previousElementSibling;
+                  const canObAgin = obItem && (entry.boundingClientRect.width % entry.target.getBoundingClientRect().width === 0);
+                  if (canObAgin) {
+                    ob.observe(obItem);
+                  }
+                  if (obItem?.classList.contains('devui-submenu')){
+                    const sub = obItem;
+                    const wrapper = obItem.children[1] as HTMLElement;
+                    (sub as HTMLElement).addEventListener('mouseenter', (ev: MouseEvent) => {
+                      ev.stopPropagation();
+                      useShowSubMenu('mouseenter', ev, wrapper);
+                    });
+                    (sub as HTMLElement).addEventListener('mouseleave', (ev: MouseEvent) => {
+                      ev.stopPropagation();
+                      useShowSubMenu('mouseleave', ev, wrapper);
+                    });
+                  }
+                  overflowItemLength.value -= 1;
+                  ob.observe(entry.target);
+                  if (container.lastChild){
+                    container.removeChild(container.lastChild);
+                  }
+                  resetOverflowContainerSelectState(container);
                 }
-                (v.target as HTMLElement).style.visibility = '';
-                v.target.remove();
-                overflowItemLength.value -=1;
               }
-            }
-          });
-        },{
-          root: root,
-          threshold: 1,
-        });
-        for (let i=0;i<children.length;i++){
+            });
+          },
+          {
+            root: root,
+            threshold: 1,
+            rootMargin: '8px'
+          }
+        );
+        for (let i = 0; i < children.length; i++) {
           ob.observe(children[i]);
         }
       }
@@ -79,28 +134,20 @@ export default defineComponent({
       return (
         <ul
           ref={menuRoot}
-          class={
-            [
-              `devui-menu`,
-              `devui-menu-${props['mode']}`,
-              props['collapsed'] ? 'devui-menu-collapsed' : ''
-            ]
-          }
-          style={
-            [
-              props['collapsed'] ? `width:${props['collapsedIndent']*2}px` : `width: ${props['width']}`,
-              "overflow: hidden",
-              "white-space: nowrap",
-            ]
-          }
-        >
+          class={rootClassName.value}
+          style={[
+            props['collapsed'] ? `width:${props['collapsedIndent'] * 2}px` : `width: ${props['width']}`,
+          ]}>
           {ctx.slots.default?.()}
           <SubMenu
-            ref={overflow_container} title='...'
-            class='devui-menu-overflow-container'
-            v-show={overflowItemLength.value > 0}></SubMenu>
+            ref={overflowContainer}
+            key="overflowContainer"
+            title="..."
+            class={overflowContainerClassName}
+            v-show={overflowItemLength.value > 0 && mode.value === 'horizontal'}>
+          </SubMenu>
         </ul>
       );
     };
-  }
+  },
 });

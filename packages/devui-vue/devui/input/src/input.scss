@@ -1,6 +1,10 @@
 @import '../../styles-var/devui-var.scss';
 
 .#{$devui-prefix}-input {
+  width: 100%;
+  height: $devui-size-md;
+  font-size: $devui-font-size;
+
   &__wrapper {
     display: inline-flex;
     align-items: center;
@@ -24,6 +28,7 @@
   }
 
   &--disabled {
+    color: $devui-disabled-text;
     border-color: $devui-disabled-line;
     background-color: $devui-disabled-bg;
     cursor: not-allowed;
@@ -44,17 +49,12 @@
   }
 
   &--sm {
-    height: 26px;
+    height: $devui-size-sm;
     font-size: $devui-font-size-sm;
   }
 
-  &--md {
-    height: 28px;
-    font-size: $devui-font-size;
-  }
-
   &--lg {
-    height: 46px;
+    height: $devui-size-lg;
     font-size: $devui-font-size-lg;
   }
 
@@ -71,6 +71,7 @@
     border: none;
     background: none;
     outline: none;
+    box-sizing: border-box;
   }
 
   &--prepend {
@@ -108,14 +109,13 @@
 
       .#{$devui-prefix}-button,
       .#{$devui-prefix}-select .#{$devui-prefix}-select__selection {
-        border: none;
-        background-color: transparent;
+        border: none !important;
+        background-color: transparent !important;
         color: inherit;
       }
 
       .#{$devui-prefix}-button,
       .#{$devui-prefix}-select__selection {
-        display: inline-block;
         margin: 0 -20px;
       }
     }

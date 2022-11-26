@@ -1,6 +1,6 @@
 import { defineComponent, ref, onUnmounted, onMounted } from 'vue';
 import { countdownProps, CountdownProps } from './countdown-types';
-import { getFormatTime, getLegalTime, getTimeSplit, getDeduplication, numFormat } from './utils';
+import { getFormatTime, getLegalTime, getTimeSplit, getDeduplication, numFormat, intervalTimer } from './utils';
 import './countdown.scss';
 
 export default defineComponent({
@@ -8,7 +8,7 @@ export default defineComponent({
   props: countdownProps,
   emits: ['onChange', 'onFinish'],
   setup(props: CountdownProps, ctx) {
-    const countdown = ref<number>();
+    const timerCleaner = ref<(() => void) | undefined | null>();
     const s = getDeduplication(props.format);
     const timeFormat = getTimeSplit(props.format);
     const timeStr = ref('');
@@ -17,7 +17,7 @@ export default defineComponent({
       const fomatMap = new Set(['Y', 'M', 'D', 'H', 'm', 's', 'S']);
       const t = timeFormat.reduce((pre, cur) => {
         if (fomatMap.has(cur.k)) {
-          return pre + numFormat(legalTime.get(cur.k), cur.n);
+          return pre + numFormat(legalTime.get(cur.k) || 0, cur.n);
         }
         return pre + cur.k;
       }, '');
@@ -40,15 +40,16 @@ export default defineComponent({
 
     const startTime = () => {
       getTime();
-      if (countdown.value) {
+      if (timerCleaner.value) {
         return;
       }
-      countdown.value = setInterval(
+      timerCleaner.value = intervalTimer(
         () => {
           const t = getTime();
           if (t === 0) {
             ctx.emit('onFinish');
-            clearInterval(countdown.value);
+            timerCleaner.value?.();
+            timerCleaner.value = null;
           }
         },
         s.has('S') ? 100 : 1000
@@ -59,7 +60,7 @@ export default defineComponent({
       startTime();
     });
     onUnmounted(() => {
-      clearInterval(countdown.value);
+      timerCleaner.value?.();
     });
     return () => {
       return (

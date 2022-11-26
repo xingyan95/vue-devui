@@ -5,7 +5,6 @@ import {
   InputDebounceCb,
   TransInputFocusEmit,
   SourceType,
-  SourceItemObj,
   UseInputHandle,
 } from '../auto-complete-types';
 export default function useInputHandle(
@@ -13,12 +12,12 @@ export default function useInputHandle(
   searchList: Ref<SourceType>,
   showNoResultItemTemplate: Ref<boolean>,
   modelValue: Ref<string>,
-  disabled: Ref<boolean>,
+  isDisabled: Ref<boolean>,
   delay: Ref<number>,
   handleSearch: HandleSearch,
   transInputFocusEmit: Ref<TransInputFocusEmit>,
   recentlyFocus: RecentlyFocus,
-  latestSource: Ref<Array<SourceItemObj>>
+  latestSource: Ref
 ): UseInputHandle {
   const visible = ref(false);
   const inputRef = ref();
@@ -69,7 +68,7 @@ export default function useInputHandle(
     showNoResultItemTemplate.value = false;
   };
   const toggleMenu = () => {
-    if (!disabled.value) {
+    if (!isDisabled.value) {
       if (visible.value) {
         handleClose();
       } else {

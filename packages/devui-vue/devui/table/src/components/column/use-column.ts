@@ -1,8 +1,8 @@
-import { watch, reactive, onBeforeMount, computed, h, getCurrentInstance, Ref, VNode, SetupContext } from 'vue';
-import type { ToRefs, Slots, ComputedRef } from 'vue';
-import { Table, DefaultRow } from '../../table-types';
-import { Column, TableColumnProps, TableColumn, SortDirection, SortMethod } from './column-types';
-import { TableStore } from '../../store/store-types';
+import { watch, reactive, onBeforeMount, computed, getCurrentInstance, Ref, VNode, SetupContext } from 'vue';
+import type { ToRefs, ComputedRef } from 'vue';
+import { ITable, DefaultRow, TableProps } from '../../table-types';
+import type { Column, TableColumnProps, TableColumn, SortDirection, SortMethod } from './column-types';
+import type { TableStore } from '../../store/store-types';
 import { formatWidth } from '../../utils';
 import { cellMap } from './config';
 
@@ -27,8 +27,9 @@ export function createColumn(id: string, props: ToRefs<TableColumnProps>, ctx: S
     align,
     showOverflowTooltip,
     resizeable,
+    cellClass,
   } = props;
-  const column: Column = reactive({ id });
+  const column: Partial<Column> = reactive({ id });
   column.type = type.value;
 
   function renderHeader(columnItem: Column, store: TableStore) {
@@ -38,11 +39,18 @@ export function createColumn(id: string, props: ToRefs<TableColumnProps>, ctx: S
     return cellMap[type.value || 'default'].renderHeader(columnItem, store);
   }
 
-  function renderCell(rowData: DefaultRow, columnItem: Column, store: TableStore, rowIndex: number) {
-    if (ctx.slots.default && columnItem.type !== 'expand') {
+  function renderCell(
+    rowData: DefaultRow,
+    columnItem: Column,
+    store: TableStore,
+    rowIndex: number,
+    tableProps: TableProps,
+    cellMode: string
+  ) {
+    if (ctx.slots.default && columnItem.type === 'index') {
       return ctx.slots.default({ row: rowData, rowIndex });
     }
-    return cellMap[type.value || 'default'].renderCell(rowData, columnItem, store, rowIndex);
+    return cellMap[type.value || 'default'].renderCell(rowData, columnItem, store, rowIndex, tableProps, cellMode, ctx);
   }
 
   watch(
@@ -96,6 +104,14 @@ export function createColumn(id: string, props: ToRefs<TableColumnProps>, ctx: S
   );
 
   watch(
+    cellClass,
+    (cellClassVal) => {
+      column.cellClass = cellClassVal;
+    },
+    { immediate: true }
+  );
+
+  watch(
     showOverflowTooltip,
     (showVal) => {
       column.showOverflowTooltip = showVal;
@@ -132,18 +148,19 @@ export function createColumn(id: string, props: ToRefs<TableColumnProps>, ctx: S
     column.customFilterTemplate = ctx.slots.customFilterTemplate;
     column.subColumns = ctx.slots.subColumns;
     column.slots = ctx.slots;
+    column.ctx = ctx;
   });
 
-  return column;
+  return column as Column;
 }
 
 export function useRender<T>(): {
-  columnOrTableParent: ComputedRef<Table<T> | TableColumn>;
+  columnOrTableParent: ComputedRef<ITable<T> | TableColumn>;
   getColumnIndex: (children: Array<unknown>, child: unknown) => number;
 } {
   const instance = getCurrentInstance() as TableColumn;
   const columnOrTableParent = computed(() => {
-    let parent: any = instance?.parent;
+    let parent = instance?.parent as TableColumn;
     while (parent && !parent.tableId && !parent.columnId) {
       parent = parent.parent;
     }

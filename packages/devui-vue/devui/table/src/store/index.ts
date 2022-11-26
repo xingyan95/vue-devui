@@ -1,9 +1,15 @@
-import { watch, Ref, ref, computed, unref, ComponentInternalInstance } from 'vue';
-import { Column, SortMethod, SortDirection } from '../components/column/column-types';
-import { DefaultRow, Table } from '../table-types';
-import { TableStore } from './store-types';
+import { watch, Ref, ref, computed, unref } from 'vue';
+import type { SetupContext } from 'vue';
+import { isBoolean } from '../../../shared/utils';
+import type { Column, LevelColumn } from '../components/column/column-types';
+import type { DefaultRow, ITable, RowKeyType } from '../table-types';
+import type { TableStore } from './store-types';
+import { useExpand } from './use-expand';
+import { useEditTableCell } from './use-edit-table-cell';
+import { getRowIdentity } from '../utils';
+import { useSort } from '../composables/use-sort';
 
-function replaceColumn(array: any[], column: any) {
+function replaceColumn(array: LevelColumn[], column: LevelColumn) {
   return array.map((item) => {
     if (item.id === column.id) {
       return column;
@@ -14,9 +20,9 @@ function replaceColumn(array: any[], column: any) {
   });
 }
 
-function doFlattenColumns(columns: any) {
-  const result: any = [];
-  columns.forEach((column: any) => {
+function doFlattenColumns(columns: LevelColumn[]) {
+  const result: LevelColumn[] = [];
+  columns.forEach((column: LevelColumn) => {
     if (column.children) {
       // eslint-disable-next-line prefer-spread
       result.push.apply(result, doFlattenColumns(column.children));
@@ -27,7 +33,7 @@ function doFlattenColumns(columns: any) {
   return result;
 }
 
-const createColumnGenerator = <T>() => {
+function createColumnGenerator() {
   const _columns: Ref<Column[]> = ref([]);
   const flatColumns: Ref<Column[]> = ref([]);
 
@@ -35,7 +41,7 @@ const createColumnGenerator = <T>() => {
     _columns.value.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   };
 
-  const insertColumn = (column: Column, parent: any) => {
+  const insertColumn = (column: LevelColumn, parent: LevelColumn) => {
     const array = unref(_columns);
     let newColumns = [];
     if (!parent) {
@@ -45,7 +51,7 @@ const createColumnGenerator = <T>() => {
       if (parent && !parent.children) {
         parent.children = [];
       }
-      parent.children.push(column);
+      parent?.children?.push(column);
       newColumns = replaceColumn(array, parent);
     }
     sortColumn();
@@ -61,29 +67,115 @@ const createColumnGenerator = <T>() => {
   };
 
   const updateColumns = () => {
-    flatColumns.value = [].concat(doFlattenColumns(_columns.value));
+    flatColumns.value = ([] as LevelColumn[]).concat(doFlattenColumns(_columns.value));
   };
 
-  return { _columns, flatColumns, insertColumn, removeColumn, sortColumn, updateColumns };
-};
+  return {
+    _columns,
+    flatColumns,
+    insertColumn,
+    removeColumn,
+    sortColumn,
+    updateColumns,
+  };
+}
 
-const createSelection = <T>(dataSource: Ref<T[]>, trackBy: (item: T) => string) => {
+function doFlattenRows<T extends Record<string, unknown>>(
+  dataList: T[],
+  level: number,
+  rowKey: RowKeyType,
+  rowLevelMap: Ref<Record<string, number>>,
+  hiddenRowKeys: Ref<string[]>
+) {
+  const result: T[] = [];
+  dataList.forEach((data: T) => {
+    result.push(data);
+    if (level > 0) {
+      const key = getRowIdentity(data as Record<string, unknown>, rowKey);
+      rowLevelMap.value[key] = level;
+      hiddenRowKeys.value.push(key);
+    }
+    if ((data as Record<string, unknown>).children) {
+      rowLevelMap.value[getRowIdentity(data as Record<string, unknown>, rowKey)] = level;
+      // eslint-disable-next-line prefer-spread
+      result.push.apply(result, doFlattenRows<T>(data.children as T[], level + 1, rowKey, rowLevelMap, hiddenRowKeys));
+    }
+  });
+  return result;
+}
+
+function createRowGenerator<T extends Record<string, unknown>>(dataSource: Ref<T[]>, rowKey: RowKeyType, flatColumns: Ref<Column[]>) {
+  const flatRows: Ref<T[]> = ref([]);
+  const hiddenRowKeys: Ref<string[]> = ref([]);
+  const rowLevelMap: Ref<Record<string, number>> = ref({});
+  const firstDefaultColumn: Ref<string> = ref('');
+
+  const updateRows = () => {
+    // 暂不支持展开行(column的type==expand)和树形表格同时使用，展开行优先级高
+    const hasExpand = flatColumns.value.some((column) => column.type === 'expand');
+    const result = hasExpand ? dataSource.value : doFlattenRows<T>(dataSource.value, 0, rowKey, rowLevelMap, hiddenRowKeys);
+    flatRows.value = ([] as T[]).concat(result);
+  };
+
+  const updateFirstDefaultColumn = () => {
+    const index = flatColumns.value.findIndex((column) => column.type === '');
+    firstDefaultColumn.value = index !== -1 ? flatColumns.value[index].id : '';
+  };
+
+  return {
+    flatRows,
+    hiddenRowKeys,
+    rowLevelMap,
+    updateRows,
+    firstDefaultColumn,
+    updateFirstDefaultColumn,
+  };
+}
+
+function createSelection<T extends Record<string, unknown>>(dataSource: Ref<T[]>, rowKey: RowKeyType, flatRows: Ref<T[]>) {
   const _checkSet: Ref<Set<string>> = ref(new Set());
-
-  const checkRow = (toggle: boolean, row: T) => {
+  const checkRow = (toggle: boolean, row: T, index: number) => {
+    const key = getRowIdentity(row as Record<string, unknown>, rowKey, index);
     if (toggle) {
-      _checkSet.value.add(trackBy(row));
+      _checkSet.value.add(key);
     } else {
-      _checkSet.value.delete(trackBy(row));
+      _checkSet.value.delete(key);
     }
   };
 
-  const isRowChecked = (row: T) => {
-    return _checkSet.value.has(trackBy(row));
+  const toggleRowSelection = (row: T, checked?: boolean, index?: number) => {
+    const key = getRowIdentity(row as Record<string, unknown>, rowKey, index);
+    const isIncluded = _checkSet.value.has(key);
+
+    const addRow = () => {
+      _checkSet.value.add(key);
+    };
+
+    const deleteRow = () => {
+      _checkSet.value.delete(key);
+    };
+
+    if (isBoolean(checked)) {
+      if (checked && !isIncluded) {
+        addRow();
+      } else if (!checked && isIncluded) {
+        deleteRow();
+      }
+    } else {
+      if (isIncluded) {
+        deleteRow();
+      } else {
+        addRow();
+      }
+    }
+  };
+
+  const isRowChecked = (row: T, index: number) => {
+    return _checkSet.value.has(getRowIdentity(row as Record<string, unknown>, rowKey, index));
   };
 
   const getCheckedRows = (): T[] => {
-    return dataSource.value.filter((item) => isRowChecked(item));
+    return flatRows.value.filter((item, index) => isRowChecked(item, index));
   };
 
   const _checkAllRecord: Ref<boolean> = ref(false);
@@ -91,8 +183,8 @@ const createSelection = <T>(dataSource: Ref<T[]>, trackBy: (item: T) => string) 
     get: () => _checkAllRecord.value,
     set: (val: boolean) => {
       _checkAllRecord.value = val;
-      dataSource.value.forEach((item) => {
-        checkRow(val, item);
+      dataSource.value.forEach((item, index) => {
+        checkRow(val, item, index);
       });
     },
   });
@@ -106,9 +198,9 @@ const createSelection = <T>(dataSource: Ref<T[]>, trackBy: (item: T) => string) 
       }
       let allTrue = true;
       let allFalse = true;
-      const items = dataSource.value;
+      const items = flatRows.value;
       for (let i = 0; i < items.length; i++) {
-        const checked = isRowChecked(items[i]);
+        const checked = isRowChecked(items[i], i);
         allTrue &&= checked;
         allFalse &&= !checked;
       }
@@ -120,7 +212,7 @@ const createSelection = <T>(dataSource: Ref<T[]>, trackBy: (item: T) => string) 
   );
 
   watch(dataSource, (value) => {
-    _checkAllRecord.value = value.findIndex(item => !isRowChecked(item)) === -1;
+    _checkAllRecord.value = value.findIndex((item, index) => !isRowChecked(item, index)) === -1;
   });
 
   return {
@@ -129,130 +221,70 @@ const createSelection = <T>(dataSource: Ref<T[]>, trackBy: (item: T) => string) 
     _halfChecked,
     getCheckedRows,
     checkRow,
-    isRowChecked
+    isRowChecked,
+    toggleRowSelection,
   };
-};
+}
 
-const createSorter = <T>(dataSource: Ref<T[]>, _data: Ref<T[]>) => {
-  const sortData = (direction: SortDirection, sortMethod: SortMethod<T>) => {
-    if (direction === 'ASC') {
-      _data.value = _data.value.sort((a, b) => (sortMethod ? (sortMethod(a, b) ? 1 : -1) : 0));
-    } else if (direction === 'DESC') {
-      _data.value = _data.value.sort((a, b) => (sortMethod ? (sortMethod(a, b) ? -1 : 1) : 0));
-    } else {
-      _data.value = [...dataSource.value];
-    }
-  };
-
-  const thList: ComponentInternalInstance[] = [];
-  return { sortData, thList };
-};
-
-const createFixedLogic = (columns: Ref<Column[]>) => {
+function createFixedLogic(columns: Ref<Column[]>) {
   const isFixedLeft = computed(() => {
     return columns.value.reduce((prev, current) => prev || !!current.fixedLeft, false);
   });
 
   return { isFixedLeft };
-};
+}
 
-const createExpandRow = <T>(dataSource: Ref<T[]>, trackBy: (item: T) => string) => {
-  const _expandedRows = ref(new Set());
-
-  const isRowExpanded = (row: T): boolean => {
-    return _expandedRows.value.has(trackBy(row));
-  };
-
-  const expandRow = (row: T): void => {
-    _expandedRows.value.add(trackBy(row));
-  };
-
-  const collapseRow = (row: T): void => {
-    _expandedRows.value.delete(trackBy(row));
-  };
-
-  const toggleRow = (row: T) => {
-    if (isRowExpanded(row)) {
-      collapseRow(row);
-    } else {
-      expandRow(row);
-    }
-  };
-
-  const getExpandedRows = (): T[] => {
-    return dataSource.value.filter((item) => isRowExpanded(item));
-  };
-
-  const expandAllRows = (): void => {
-    dataSource.value.forEach(item => {
-      expandRow(item);
-    });
-  };
-
-  const collapseAllRows = (): void => {
-    dataSource.value.forEach(item => {
-      collapseRow(item);
-    });
-  };
-
-  return {
-    _expandedRows,
-    toggleRow,
-    expandRow,
-    collapseRow,
-    isRowExpanded,
-    getExpandedRows,
-    expandAllRows,
-    collapseAllRows,
-  };
-};
-
-export function createStore<T>(dataSource: Ref<T[]>, table: Table<DefaultRow>): TableStore<T> {
+/**
+ * 创建 TableStore
+ * @param dataSource 数据源
+ * @param table 表对象
+ * @returns TableStore
+ */
+export function createStore<T extends Record<string, unknown>>(
+  dataSource: Ref<T[]>,
+  table: ITable<DefaultRow>,
+  ctx: SetupContext
+): TableStore<T> {
   const _data: Ref<T[]> = ref([]);
+  const { _columns, flatColumns, insertColumn, removeColumn, sortColumn, updateColumns } = createColumnGenerator();
+  const { flatRows, hiddenRowKeys, rowLevelMap, updateRows, firstDefaultColumn, updateFirstDefaultColumn } = createRowGenerator<T>(
+    dataSource,
+    table.props.rowKey as RowKeyType,
+    flatColumns
+  );
+
+  const { _checkAll, _checkSet, _halfChecked, getCheckedRows, isRowChecked, checkRow, toggleRowSelection } = createSelection<T>(
+    _data,
+    table.props.rowKey as RowKeyType,
+    flatRows
+  );
+
+  const { thList, collectTh, sortData } = useSort(dataSource, flatRows);
+
+  const { isFixedLeft } = createFixedLogic(_columns);
+  const { isRowExpanded, updateExpandRows, setExpandRows, toggleRowExpansion } = useExpand(_data, table);
+
+  const { tableCellModeMap, setCellMode, resetCellMode } = useEditTableCell();
+
+  const emitTableEvent = (eventName: string, ...params: unknown[]) => {
+    ctx.emit.apply(ctx, [eventName, ...params]);
+  };
+
   watch(
     dataSource,
     (value: T[]) => {
       _data.value = [...value];
+      updateExpandRows();
     },
     { deep: true, immediate: true }
   );
 
-  const {
-    _columns,
-    flatColumns,
-    insertColumn,
-    removeColumn,
-    sortColumn,
-    updateColumns
-  } = createColumnGenerator();
-
-  const {
-    _checkAll,
-    _checkSet,
-    _halfChecked,
-    getCheckedRows,
-    isRowChecked,
-    checkRow
-  } = createSelection(_data, table.props.trackBy as (v: T) => string);
-
-  const { sortData, thList } = createSorter(dataSource, _data);
-
-  const { isFixedLeft } = createFixedLogic(_columns);
-  const {
-    _expandedRows,
-    toggleRow,
-    expandRow,
-    collapseRow,
-    isRowExpanded,
-    getExpandedRows,
-    expandAllRows,
-    collapseAllRows,
-  } = createExpandRow(dataSource, table.props.trackBy as (v: T) => string);
-
   return {
-    _table: table,
     states: {
       _data,
+      flatRows,
+      hiddenRowKeys,
+      rowLevelMap,
       _columns,
       flatColumns,
       _checkSet,
@@ -260,23 +292,26 @@ export function createStore<T>(dataSource: Ref<T[]>, table: Table<DefaultRow>): 
       _halfChecked,
       isFixedLeft,
       thList,
-      _expandedRows,
+      firstDefaultColumn,
+      tableCellModeMap,
     },
     insertColumn,
     sortColumn,
     removeColumn,
     updateColumns,
+    updateRows,
     getCheckedRows,
+    collectTh,
     sortData,
     isRowChecked,
     checkRow,
-
-    toggleRow,
-    expandRow,
-    collapseRow,
     isRowExpanded,
-    getExpandedRows,
-    expandAllRows,
-    collapseAllRows,
+    setExpandRows,
+    toggleRowExpansion,
+    toggleRowSelection,
+    updateFirstDefaultColumn,
+    setCellMode,
+    resetCellMode,
+    emitTableEvent,
   };
 }

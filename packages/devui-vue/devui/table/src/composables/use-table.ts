@@ -1,10 +1,11 @@
-import { computed, ref } from 'vue';
+import { computed, ref, watchEffect, watch } from 'vue';
 import type { ComputedRef, CSSProperties, Ref } from 'vue';
 import { Column } from '../components/column/column-types';
-import { Table, DefaultRow, TablePropsTypes, UseTable, UseFixedColumn, UseTableLayout } from '../table-types';
+import { ITable, DefaultRow, TableProps, UseTable, UseFixedColumn, UseTableLayout } from '../table-types';
 import { useNamespace } from '../../../shared/hooks/use-namespace';
+import { TableStore } from '../store/store-types';
 
-export function useTable(props: TablePropsTypes, tableWidth: Ref): UseTable {
+export function useTable(props: TableProps, tableWidth: Ref): UseTable {
   const ns = useNamespace('table');
   const classes = computed(() => ({
     [ns.e('view')]: true,
@@ -41,25 +42,25 @@ export const useFixedColumn = (column: Ref<Column>): UseFixedColumn => {
   return { stickyClass, stickyStyle };
 };
 
-export function useTableLayout(table: Table<DefaultRow>): UseTableLayout {
+export function useTableLayout(table: ITable<DefaultRow>): UseTableLayout {
   const tableWidth = ref();
 
   const updateColgroupWidth = () => {
-    const cols = table?.vnode?.el?.querySelectorAll('colgroup > col') || [];
+    const cols = (table?.vnode?.el?.querySelectorAll('colgroup > col') || []) as HTMLElement[];
     if (!cols.length) {
       return;
     }
     const flatColumns = table.store.states.flatColumns;
-    const columnMap: Record<string, any> = {};
+    const columnMap: Record<string, Column> = {};
     flatColumns.value.forEach((column: Column) => {
       columnMap[column.id] = column;
     });
     for (let i = 0, len = cols.length; i < len; i++) {
       const col = cols[i];
-      const columnId = col.getAttribute('column-id');
+      const columnId = col.getAttribute('column-id') as string;
       const column = columnMap[columnId];
       if (column) {
-        col.setAttribute('width', column.realWidth);
+        col.setAttribute('width', column.realWidth as string);
       }
     }
   };
@@ -109,4 +110,20 @@ export function useTableLayout(table: Table<DefaultRow>): UseTableLayout {
   };
 
   return { tableWidth, updateColumnWidth };
+}
+
+export function useTableWatcher(props: TableProps, store: TableStore): void {
+  watchEffect(() => {
+    if (props.expandRowKeys) {
+      store.setExpandRows(props.expandRowKeys);
+    }
+  });
+  watch(
+    () => props.data,
+    () => {
+      store.updateRows();
+      store.updateColumns();
+    },
+    { deep: true }
+  );
 }

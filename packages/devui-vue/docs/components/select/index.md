@@ -14,17 +14,14 @@
 ```vue
 <template>
   <div>
-    Small
-    <d-select v-model="value1" :options="options" size="sm"></d-select>
-    <br />
-    Middle
-    <d-select v-model="value2" :options="options"></d-select>
-    <br />
-    Large
-    <d-select v-model="value3" :options="options" size="lg"></d-select>
-    <br />
-    Underlined
-    <d-select v-model="value4" :options="options" size="lg" overview="underlined"></d-select>
+    <div class="mb-0">Small</div>
+    <d-select class="mb-2" v-model="value1" :options="options" size="sm"></d-select>
+    <div class="mb-0">Middle</div>
+    <d-select class="mb-2" v-model="value2" :options="options"></d-select>
+    <div class="mb-0">Large</div>
+    <d-select class="mb-2" v-model="value3" :options="options" size="lg"></d-select>
+    <div class="mb-0">Underlined</div>
+    <d-select class="mb-2" v-model="value4" :options="options" size="lg" overview="underlined"></d-select>
   </div>
 </template>
 
@@ -55,19 +52,17 @@ export default defineComponent({
 
 ### 多选
 
-通过`multiple`：`true`来开启多选
+通过`multiple`：`true`来开启多选，通过设置`multiple-limit`来限制可以选择的数量
 :::demo
 
 ```vue
 <template>
-  <div>基础多选</div>
-  <d-select v-model="value1" :options="options" :multiple="true" />
-  <br />
-  <div>collapse-tags</div>
-  <d-select v-model="value2" :options="options" :multiple="true" :collapse-tags="true" />
-  <br />
-  <div>collapse-tags-tooltip</div>
-  <d-select v-model="value3" :options="options" :multiple="true" :collapse-tags="true" :collapse-tags-tooltip="true" />
+  <div class="mb-0">基础多选</div>
+  <d-select class="mb-2" v-model="value1" :options="options" :multiple="true" :multiple-limit="2" />
+  <div class="mb-0">collapse-tags</div>
+  <d-select class="mb-2" v-model="value2" :options="options" :multiple="true" :collapse-tags="true" />
+  <div class="mb-0">collapse-tags-tooltip</div>
+  <d-select class="mb-2" v-model="value3" :options="options" :multiple="true" :collapse-tags="true" :collapse-tags-tooltip="true" />
 </template>
 
 <script>
@@ -90,11 +85,6 @@ export default defineComponent({
   },
 });
 </script>
-<style>
-.source {
-  overflow: unset !important;
-}
-</style>
 ```
 
 :::
@@ -106,11 +96,9 @@ export default defineComponent({
 
 ```vue
 <template>
-  <d-select v-model="value1" :options="options1" :disabled="true" />
-  <br />
-  <d-select v-model="value2" :options="options2" option-disabled-key="disabled" />
-  <br />
-  <d-select v-model="value3" :options="options3" :multiple="true" option-disabled-key="notAllow" />
+  <d-select class="mb-2" v-model="value1" :options="options1" :disabled="true" />
+  <d-select class="mb-2" v-model="value2" :options="options2" option-disabled-key="disabled" />
+  <d-select class="mb-2" v-model="value3" :options="options3" :multiple="true" option-disabled-key="notAllow" />
 </template>
 
 <script>
@@ -176,8 +164,7 @@ export default defineComponent({
 
 ```vue
 <template>
-  <d-select v-model="value1" :options="options" :allow-clear="true" />
-  <br />
+  <d-select class="mb-2" v-model="value1" :options="options" :allow-clear="true" />
   <d-select v-model="value2" :options="options" :multiple="true" :allow-clear="true" />
 </template>
 
@@ -203,6 +190,46 @@ export default defineComponent({
 
 :::
 
+### 下拉列表显隐方法
+
+通过`toggleChange`方法可以在代码中控制下拉列表的展示和隐藏。
+:::demo
+
+```vue
+<template>
+  <div>
+    <d-button @click.stop="toggleChange" @pointerup.stop="() => {}"  class="mb-2">展开 / 隐藏</d-button>
+    <d-select ref="demoSelect" v-model="toggleValue" :options="options"></d-select>
+  </div>
+</template>
+
+<script>
+import { defineComponent, reactive, ref } from 'vue';
+
+export default defineComponent({
+  setup() {
+    const toggleValue = ref('');
+    const visitable = ref(false);
+    const items = new Array(6).fill(0).map((item, i) => `Option ${i + 1}`);
+    const options = reactive(items);
+    const demoSelect = ref(null);
+    const toggleChange = () => {
+      visitable.value = !visitable.value;
+      demoSelect.value.toggleChange(visitable.value);
+    };
+    return {
+      toggleValue,
+      options,
+      demoSelect,
+      toggleChange,
+    };
+  },
+});
+</script>
+```
+
+:::
+
 ### 自定义下拉面板显示
 
 通过 d-option 设置单个内容
@@ -210,13 +237,12 @@ export default defineComponent({
 
 ```vue
 <template>
-  <div>d-option</div>
-  <d-select v-model="value1" :allow-clear="true">
+  <div class="mb-0">d-option</div>
+  <d-select class="mb-2" v-model="value1" :allow-clear="true">
     <d-option v-for="(item, index) in options.data" :key="index" :value="item.value" :name="item.name"></d-option>
   </d-select>
-  <br />
-  <div>d-option自定义内容及样式</div>
-  <d-select v-model="value2" :allow-clear="true">
+  <div class="mb-0">d-option自定义内容及样式</div>
+  <d-select class="mb-2" v-model="value2" :allow-clear="true">
     <d-option v-for="(item, index) in options1.data" :key="index" :value="item">
       <div class="clear-float">
         <span style="float: left;">{{ item }}</span>
@@ -267,6 +293,69 @@ export default defineComponent({
 
 :::
 
+### 将选项进行分组
+
+通过 d-option-group 设置选项分组，它的 label 属性为分组名
+:::demo
+
+```vue
+<template>
+  <d-select v-model="groupValue" :allow-clear="true" class="select-option-group">
+    <d-option-group label="分组一">
+      <d-option v-for="(item, index) in options1.data" :key="index" :value="item.value" :name="item.name"></d-option>
+    </d-option-group>
+    <d-option-group label="分组二" :disabled="true">
+      <d-option v-for="(item, index) in options2.data" :key="index" :value="item.value" :name="item.name"></d-option>
+    </d-option-group>
+  </d-select>
+</template>
+
+<script>
+import { defineComponent, reactive, ref } from 'vue';
+
+export default defineComponent({
+  setup() {
+    const groupValue = ref('');
+    const items = new Array(6).fill(0).map((item, i) => {
+      return {
+        value: `Option ${i + 1}`,
+        name: `Option ${i + 1}`,
+      };
+    });
+    const items1 = new Array(6).fill(0).map((item, i) => {
+      return {
+        value: `Test ${i + 1}`,
+        name: `Test ${i + 1}`,
+      };
+    });
+    const options1 = reactive({
+      data: items,
+    });
+    const options2 = reactive({
+      data: items1,
+    });
+    return {
+      groupValue,
+      options1,
+      options2,
+    };
+  },
+});
+</script>
+<style>
+.select-option-group {
+  ul {
+    padding: 0;
+    li {
+      list-style-type: none;
+    }
+  }
+}
+</style>
+```
+
+:::
+
 ### 筛选、搜索选项
 
 可以利用筛选、搜索功能快速查找选项
@@ -278,13 +367,12 @@ export default defineComponent({
 
 ```vue
 <template>
-  <div>默认筛选</div>
-  <d-select v-model="value1" :allow-clear="true" filter>
+  <div class="mb-0">默认筛选</div>
+  <d-select class="mb-2" v-model="value1" :allow-clear="true" filter>
     <d-option v-for="(item, index) in options.data" :key="index" :value="item.value" :name="item.name"></d-option>
   </d-select>
-  <br />
-  <div>远程搜索</div>
-  <d-select v-model="value2" :allow-clear="true" :filter="filterFunc" remote placeholder="请输入搜索关键字" :loading="loading">
+  <div class="mb-0">远程搜索</div>
+  <d-select class="mb-2" v-model="value2" :allow-clear="true" :filter="filterFunc" remote placeholder="请输入搜索关键字" :loading="loading">
     <d-option v-for="(item, index) in options1.data" :key="index" :value="item.value" :name="item.name"></d-option>
   </d-select>
 </template>
@@ -430,31 +518,46 @@ export default defineComponent({
 | no-match-text         | `string`              | '找不到相关记录' | 可选, 搜索条件无匹配时显示的文本，也可通过 empty 插槽自定义                                                                                                    | [筛选、搜索选项](#筛选、搜索选项) |
 | loading               | `boolean`             | false            | 可选, 配置下拉选项是否远程加载，配合 loading-text 使用                                                                                                         | [远程加载数据](#远程加载数据)     |
 | loading-text          | `string`              | '加载中'         | 可选, 远程搜索时显示的文本                                                                                                                                     | [远程加载数据](#远程加载数据)     |
+| multiple-limit        | `number`              | '0'              | 可选, multiple 属性设置为 true 时生效，表示用户最多可以选择的项目数， 为 0 则不限制                                                                            | [多选](#多选)                     |
 
 ### Select 事件
 
-| 事件名        | 类型                      | 说明                                                       | 跳转 Demo |
-| :------------ | :------------------------ | :--------------------------------------------------------- | :-------- |
-| value-change  | `Function(data)`          | 可选，当选中某个选项后,将会调用此函数,参数为当前选择项的值 |           |
-| toggle-change | `Function(boolean)`       | 可选，下拉打开关闭 toggle 事件                             |           |
-| focus         | `Function(e: FocusEvent)` | 可选，获取焦点时触发                                       |
-| blur          | `Function(e: FocusEvent)` | 可选，失去焦点时触发                                       |
-| clear         | `Function()`              | 可选, 通过右侧删除图标清空所有选项时触发                   |
-| remove-tag    | `Function(value)`         | 可选，多选时删除单个 tag 时触发，参数为当前 tag 的值       |
+| 事件名        | 类型                      | 说明                                                           | 跳转 Demo |
+| :------------ | :------------------------ | :------------------------------------------------------------- | :-------- |
+| value-change  | `Function(data)`          | 可选，当选中值发生变化时触发，参数为目前选中的值(多选时为数组) |           |
+| toggle-change | `Function(boolean)`       | 可选，下拉打开关闭 toggle 事件                                 |           |
+| focus         | `Function(e: FocusEvent)` | 可选，获取焦点时触发                                           |
+| blur          | `Function(e: FocusEvent)` | 可选，失去焦点时触发                                           |
+| clear         | `Function()`              | 可选, 通过右侧删除图标清空所有选项时触发                       |
+| remove-tag    | `Function(value)`         | 可选，多选时删除单个 tag 时触发，参数为当前 tag 的值           |
 
 ### Select 插槽
 
-| 名称    | 说明                       |
-| :------ | :------------------------- |
-| default | 自定义 Select 下拉面板内容 |
-| empty   | 自定义无选项时下拉面板内容 |
+| 名称    | 说明                                              |
+| :------ | :------------------------------------------------ |
+| default | 自定义 Select 下拉面板内容（OptionGroup/ Option） |
+| empty   | 自定义无选项时下拉面板内容                        |
 
 ### Select 方法
 
-| 名称  | 说明                     |
-| :---- | :----------------------- |
-| focus | 使选择器的输入框获取焦点 |
-| blur  | 使选择器的输入框失去焦点 |
+| 名称         | 说明                        | 跳转 Demo                             |
+| :----------- | :-------------------------- | :------------------------------------ |
+| focus        | 使选择器的输入框获取焦点    | -                                     |
+| blur         | 使选择器的输入框失去焦点    | -                                     |
+| toggleChange | 使选择器的下拉列表显示/隐藏 | [下拉列表显隐方法](#下拉列表显隐方法) |
+
+### OptionGroup 参数
+
+| 参数名   | 类型      | 默认  | 说明                             | 跳转 Demo                         |
+| :------- | :-------- | :---- | :------------------------------- | :-------------------------------- |
+| label    | `string`  | ''    | 可选，分组的组名                 | [将选项进行分组](#将选项进行分组) |
+| disabled | `boolean` | false | 可选，是否禁用该分组下的所有选项 | [将选项进行分组](#将选项进行分组) |
+
+### OptionGroup 插槽
+
+| 名称    | 说明                             |
+| :------ | :------------------------------- |
+| default | 自定义单个选项显示内容（Option） |
 
 ### Option 参数
 

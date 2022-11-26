@@ -1,58 +1,39 @@
-import { TreeData } from '../../';
+import type { ITreeNode } from '../../';
 
-export const checkableTreeData: TreeData = [
+export const checkableTreeData: ITreeNode[] = [
   {
     label: 'Parent node 1',
-    open: true,
     children: [
       {
         label: 'Parent node 1-1',
-        open: true,
-        disableCheck: true,
-        children: [
-          {
-            label: 'Leaf node 1-1-1'
-          }
-        ]
+        children: [{ label: 'Leaf node 1-1-1' }, { label: 'Leaf node 1-1-2' }],
       },
-      {
-        label: 'Parent node 1-2',
-        open: true,
-        checked: true,
-        disableCheck: true,
-        children: [
-          {
-            label: 'Leaf node 1-2-1'
-          }
-        ]
-      },
-      {
-        label: 'Leaf node 1-3',
-      },
-      {
-        label: 'Leaf node 1-4',
-        checked: true,
-      },
-      {
-        label: 'Leaf node 1-5',
-        disableCheck: true,
-      },
-      {
-        label: 'Leaf node 1-6',
-        checked: true,
-        disableCheck: true,
-      },
-    ]
+      { label: 'Leaf node 1-2' },
+    ],
   },
+  { label: 'Leaf node 2' },
+];
+
+export const disabledCheckableTreeData: ITreeNode[] = [
   {
-    label: 'Parent node 2',
+    label: 'Parent node 1',
+    expanded: true,
     children: [
       {
-        label: 'Leaf node 2-1'
-      }
-    ]
+        label: 'Parent node 1-1',
+        disableToggle: true,
+        disableSelect: true,
+        disableCheck: true,
+        children: [{ label: 'Leaf node 1-1-1' }],
+      },
+      {
+        label: 'Leaf node 1-2',
+        disableCheck: true,
+      },
+    ],
   },
   {
-    label: 'Leaf node 3',
-  }
+    label: 'Leaf node 2',
+    disableSelect: true,
+  },
 ];

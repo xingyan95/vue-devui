@@ -1,36 +1,39 @@
-import { Ref } from 'vue';
-import { IInnerTreeNode, IUseCore } from '../tree-types';
+import { Ref, SetupContext } from 'vue';
+import { IInnerTreeNode, IUseCore, IUseToggle, IUseLazyLoad } from './use-tree-types';
 
-export interface IUseToggle {
-  expandNode: (node: IInnerTreeNode) => void;
-  collapseNode: (node: IInnerTreeNode) => void;
-  toggleNode: (node: IInnerTreeNode) => void;
-  expandAllNodes: () => void;
-}
-
-export default function () {
-  return function useToggle(data: Ref<IInnerTreeNode[]>, core: IUseCore): IUseToggle {
+export function useToggle() {
+  return function useToggleFn(data: Ref<IInnerTreeNode[]>, core: IUseCore, context: SetupContext, lazyLode: IUseLazyLoad): IUseToggle {
     const { getNode, setNodeValue } = core;
+    const { lazyLoadNodes } = lazyLode;
 
     const expandNode = (node: IInnerTreeNode): void => {
-      if (node.disableToggle) { return; }
+      if (node.disableToggle || node.loading) {
+        return;
+      }
 
       setNodeValue(node, 'expanded', true);
+      context.emit('toggle-change', node);
     };
 
     const collapseNode = (node: IInnerTreeNode): void => {
-      if (node.disableToggle) { return; }
+      if (node.disableToggle || node.loading) {
+        return;
+      }
       setNodeValue(node, 'expanded', false);
+      context.emit('toggle-change', node);
     };
 
     const toggleNode = (node: IInnerTreeNode): void => {
-      if (node.disableToggle) { return; }
-
-      if (getNode(node).expanded) {
-        setNodeValue(node, 'expanded', false);
-      } else {
-        setNodeValue(node, 'expanded', true);
+      if (node.disableToggle || node.loading) {
+        return;
       }
+      if (getNode(node).expanded) {
+        collapseNode(node);
+      } else {
+        expandNode(node);
+      }
+      // 懒加载节点
+      lazyLoadNodes(node);
     };
 
     const expandAllNodes = (): void => {

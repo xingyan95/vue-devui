@@ -45,6 +45,43 @@ export default defineComponent({
 
 :::
 
+### 保留最后一次关闭位置
+
+:::demo `keep-last`可使当前modal再次打开时保留上次关闭位置。
+
+```vue
+<template>
+  <d-button @click="handleClick">打开 modal</d-button>
+  <d-modal v-model="visible" title="Start Keep Last" :keep-last="true">
+    <div>name: {{ data.name }}</div>
+    <div>age: {{ data.age }}</div>
+    <div>address: {{ data.address }}</div>
+  </d-modal>
+</template>
+
+<script>
+import { defineComponent, ref, reactive } from 'vue';
+
+export default defineComponent({
+  setup() {
+    const visible = ref(false);
+    const data = reactive({
+      name: 'Tom',
+      age: 20,
+      address: 'Chengdu',
+    });
+    const handleClick = () => {
+      visible.value = true;
+    };
+
+    return { visible, data, handleClick };
+  },
+});
+</script>
+```
+
+:::
+
 ### 自定义标题和操作按钮
 
 :::demo `header`插槽可以自定义 Modal 顶部区域，子组件`d-modal-header`为顶部区域提供了默认样式，自定义样式可通过在子组件设置`style/class`实现。`footer`插槽同理。
@@ -88,6 +125,48 @@ export default defineComponent({
     };
 
     return { visible, data, handleClick, hidden };
+  },
+});
+</script>
+```
+
+:::
+
+### 信息提示
+
+:::demo 各种类型的信息提示框。
+
+```vue
+<template>
+  <d-button class="mr-1" @click="handleClick('success')">success</d-button>
+  <d-button class="mr-1" @click="handleClick('failed')">failed</d-button>
+  <d-button class="mr-1" @click="handleClick('warning')">warning</d-button>
+  <d-button class="mr-1" @click="handleClick('info')">info</d-button>
+  <d-modal v-model="visible" title="Start Snapshot Version" :type="type">
+    <div>name: {{ data.name }}</div>
+    <div>age: {{ data.age }}</div>
+    <div>address: {{ data.address }}</div>
+  </d-modal>
+</template>
+
+<script>
+import { defineComponent, ref, reactive } from 'vue';
+
+export default defineComponent({
+  setup() {
+    const visible = ref(false);
+    const type = ref('');
+    const data = reactive({
+      name: 'Tom',
+      age: 20,
+      address: 'Chengdu',
+    });
+    const handleClick = (t: string) => {
+      visible.value = true;
+      type.value = t;
+    };
+
+    return { visible, data, handleClick, type };
   },
 });
 </script>
@@ -148,17 +227,21 @@ export default defineComponent({
 
 ### Modal 参数
 
-| 参数名                 | 类型             | 默认值 | 说明                                       | 跳转 Demo                 |
-| :--------------------- | :--------------- | :----- | :----------------------------------------- | :------------------------ |
-| v-model                | `boolean`        | false  | 是否显示 Modal                             | [基础用法](#基础用法)     |
-| title                  | `string`         | -      | 可选，Modal 的标题                         | [基础用法](#基础用法)     |
-| lock-scroll            | `boolean`        | true   | 可选，是否将 body 滚动锁定                 |
-| close-on-click-overlay | `boolean`        | true   | 可选，点击空白处是否能关闭 Modal           |
-| before-close           | `(done) => void` | -      | 可选，关闭前的回调，调用 done 可关闭 Modal | [关闭前回调](#关闭前回调) |
-| escapable              | `boolean`        | true   | 可选，是否支持 esc 键关闭弹窗              |                           |
-| show-close             | `boolean`        | true   | 可选，是否展示关闭按钮                     |                           |
-| show-overlay           | `boolean`        | true   | 可选，是否展示遮罩层                       |                           |
-| append-to-body         | `boolean`        | true   | 可选，是否将 Modal 提升到 body 层          |                           |
+| 参数名                 | 类型                                 | 默认值 | 说明                                       | 跳转 Demo                 |
+| :--------------------- | :----------------------------------- | :----- | :----------------------------------------- | :------------------------ |
+| v-model                | `boolean`                            | false  | 是否显示 Modal                             | [基础用法](#基础用法)     |
+| title                  | `string`                             | -      | 可选，Modal 的标题                         | [基础用法](#基础用法)     |
+| keep-last      | `boolean`                            | false   | 可选，是否保留上次移动位置  | [保留最后一次关闭位置](#保留最后一次关闭位置)  
+| lock-scroll            | `boolean`                            | true   | 可选，是否将 body 滚动锁定                 |
+| close-on-click-overlay | `boolean`                            | true   | 可选，点击空白处是否能关闭 Modal           |
+| before-close           | `(done) => void`                     | -      | 可选，关闭前的回调，调用 done 可关闭 Modal | [关闭前回调](#关闭前回调) |
+| escapable              | `boolean`                            | true   | 可选，是否支持 esc 键关闭弹窗              |                           |
+| show-close             | `boolean`                            | true   | 可选，是否展示关闭按钮                     |                           |
+| draggable              | `boolean`                            | true   | 可选，弹框是否可拖拽                       |
+| show-animation         | `boolean`                            | true   | 可选，是否显示动画                         |
+| show-overlay           | `boolean`                            | true   | 可选，是否展示遮罩层                       |                           |
+| append-to-body         | `boolean`                            | true   | 可选，是否将 Modal 提升到 body 层          |                           |
+| type                   | success \| failed \| warning \| info | -      | 可选，弹框信息提示                         |
 
 ### Modal 插槽
 

@@ -13,7 +13,7 @@
 
 ```vue
 <template>
-  <d-table :data="baseTableData" :trackBy="(item) => item.firstName">
+  <d-table :data="baseTableData" style="width: 100%">
     <d-column field="firstName" header="First Name"></d-column>
     <d-column field="lastName" header="Last Name"></d-column>
     <d-column field="gender" header="Gender"></d-column>
@@ -67,20 +67,20 @@ export default defineComponent({
 
 ```vue
 <template>
-  <div class="table-btn-groups">
-    <div class="table-btn">
+  <div class="table-btn-groups mb-2">
+    <div class="table-btn mb-1">
       自动表格布局：
       <d-switch v-model="tableLayout" />
     </div>
-    <div class="table-btn">
+    <div class="table-btn mb-1">
       斑马纹：
       <d-switch v-model="striped" />
     </div>
-    <div class="table-btn">
+    <div class="table-btn mb-1">
       表头背景色：
       <d-switch v-model="headerBg" />
     </div>
-    <div class="table-btn">
+    <div class="table-btn mb-1">
       表格大小：
       <d-radio-group direction="row" v-model="size">
         <d-radio v-for="item in sizeList" :key="item.label" :value="item.value">
@@ -88,7 +88,7 @@ export default defineComponent({
         </d-radio>
       </d-radio-group>
     </div>
-    <div class="table-btn">
+    <div class="table-btn mb-1">
       表格边框：
       <d-radio-group direction="row" v-model="borderType">
         <d-radio v-for="item in borderTypeList" :key="item.label" :value="item.value">
@@ -96,7 +96,7 @@ export default defineComponent({
         </d-radio>
       </d-radio-group>
     </div>
-    <div class="table-btn">
+    <div class="table-btn mb-1">
       表头显隐：
       <d-switch v-model="showHeader" />
     </div>
@@ -109,7 +109,6 @@ export default defineComponent({
     :size="size"
     :border-type="borderType"
     :show-header="showHeader"
-    :trackBy="trackBy"
   >
     <d-column field="firstName" header="First Name"></d-column>
     <d-column field="lastName" header="Last Name"></d-column>
@@ -194,9 +193,6 @@ export default defineComponent({
       showHeader,
       borderTypeList,
       tableLayout,
-      trackBy(item) {
-        return `${item.firstName}${item.lastName}`;
-      },
     };
   },
 });
@@ -220,22 +216,25 @@ export default defineComponent({
 
 ### 表格交互
 
-:::demo 通过添加一个`d-column`并且设置`type`属性为`checkable`即可实现表格的多选功能。`getCheckedRows`方法可以获取已选择的列表。通过`cell-click`事件监听单元格点击，事件回调参数包含行索引、列索引、行数据、列数据。在列上配置`resizeable`属性，可实现该列拖动改变宽度，`min-width`和`max-width`设置可拖动范围，事件`resize-start`、`resizing`、`resize-end`分别在拖动开始时、进行中、结束后触发。
+:::demo 通过添加一个`d-column`并且设置`type`属性为`checkable`即可实现表格的多选功能。`getCheckedRows`方法可以获取已选择的列表。`toggleRowSelection`方法可以切换某一行的选中状态。通过`cell-click`事件监听单元格点击，事件回调参数包含行索引、列索引、行数据、列数据。在列上配置`resizeable`属性，可实现该列拖动改变宽度，`min-width`和`max-width`设置可拖动范围，事件`resize-start`、`resizing`、`resize-end`分别在拖动开始时、进行中、结束后触发。
 
 ```vue
 <template>
   <div>
-    <d-button @click="handleClick" class="mr-m mb-m">Get CheckedRows</d-button>
-    <d-button @click="insertRow" class="mr-m mb-m">Insert Row</d-button>
-    <d-button @click="deleteRow" class="mr-m mb-m">Delete Row</d-button>
+    <div class="mb-2">
+      <d-button @click="handleClick" class="mr-1">Get CheckedRows</d-button>
+      <d-button @click="insertRow" class="mr-1">Insert Row</d-button>
+      <d-button @click="deleteRow" class="mr-1">Delete Row</d-button>
+      <d-button @click="toggleRow" class="mr-1">Toggle Row</d-button>
+    </div>
     <d-table
       ref="tableRef"
       :data="data"
-      row-key="firstName"
+      :row-key="(item) => item.id"
       @cell-click="onCellClick"
+      @row-click="onRowClick"
       @check-change="checkChange"
       @check-all-change="checkAllChange"
-      :trackBy="(item) => item.id"
     >
       <d-column type="checkable" width="40" :checkable="checkable" reserve-check></d-column>
       <d-column field="firstName" header="First Name" width="200"></d-column>
@@ -296,15 +295,22 @@ export default defineComponent({
       console.log(tableRef.value.store.getCheckedRows());
     };
     const onCellClick = (params) => {
-      console.log(params);
+      console.log('cell-click', params);
+    };
+    const onRowClick = (params) => {
+      console.log('row-click', params);
     };
 
-    const checkChange = (checked, row) => {
-      console.log('checked row:', checked, row);
+    const checkChange = (checked, row, selection) => {
+      console.log('checked row:', checked, row, selection);
     };
 
-    const checkAllChange = (checked) => {
-      console.log('checked:', checked);
+    const checkAllChange = (checked, selection) => {
+      console.log('checked:', checked, selection);
+    };
+
+    const toggleRow = () => {
+      tableRef.value.store.toggleRowSelection(data.value[0]);
     };
 
     const checkable = (row, rowIndex) => {
@@ -342,6 +348,7 @@ export default defineComponent({
       data,
       handleClick,
       onCellClick,
+      onRowClick,
       checkChange,
       checkAllChange,
       checkable,
@@ -350,6 +357,7 @@ export default defineComponent({
       onResizeStart,
       onResizing,
       onResizeEnd,
+      toggleRow,
     };
   },
 });
@@ -365,7 +373,7 @@ export default defineComponent({
 ```vue
 <template>
   <div>
-    <d-table :data="data" :trackBy="(item) => item.firstName">
+    <d-table :data="data">
       <d-column type="index" width="40"></d-column>
       <d-column field="firstName" header="First Name"></d-column>
       <d-column field="lastName" header="Last Name"></d-column>
@@ -421,7 +429,7 @@ export default defineComponent({
 
 ```vue
 <template>
-  <d-table :data="dataSource" :trackBy="(item) => item.firstName">
+  <d-table :data="dataSource">
     <d-column type="index" width="80">
       <template #default="scope">
         {{ `No.${scope.rowIndex + 1}` }}
@@ -482,13 +490,122 @@ export default defineComponent({
 
 :::
 
+### 编辑单元格
+
+:::demo 通过`d-column`子组件提供的`cell`、`cellEdit`插槽以及属性`type`设置为`editable`实现编辑单元格。此功能需配合`row-key`属性使用。
+
+```vue
+<template>
+  <d-table ref="tableRef" :data="dataSource" row-key="id" @cellClick="cellClick">
+    <d-column type="index" width="80">
+      <template #default="scope">
+        {{ `No.${scope.rowIndex + 1}` }}
+      </template>
+    </d-column>
+    <d-column field="firstName" header="First Name" type="editable">
+      <template #cell="scope">
+        {{ scope.row.firstName }}
+      </template>
+      <template #cellEdit="scope">
+        <d-input
+          ref="firstNameRef"
+          v-model="scope.row.firstName"
+          @change="(value) => change(scope.row, scope.rowIndex, 'firstName', value)"
+          @blur="() => blur(scope.row, scope.rowIndex, 'firstName')"
+        />
+      </template>
+    </d-column>
+    <d-column field="lastName" header="Last Name" type="editable">
+      <template #cell="scope">
+        {{ scope.row.lastName }}
+      </template>
+      <template #cellEdit="scope">
+        <d-input
+          ref="lastNameRef"
+          v-model="scope.row.lastName"
+          @change="(value) => change(scope.row, scope.rowIndex, 'lastName', value)"
+          @blur="() => blur(scope.row, scope.rowIndex, 'lastName')"
+        />
+      </template>
+    </d-column>
+    <d-column field="gender" header="Gender" type="editable">
+      <template #cell="scope">
+        {{ scope.row.gender }}
+      </template>
+      <template #cellEdit="scope">
+        <d-select
+          ref="genderRef"
+          v-model="scope.row.gender"
+          :options="options"
+          @valueChange="(value) => change(scope.row, scope.rowIndex, 'gender', value)"
+        />
+      </template>
+    </d-column>
+  </d-table>
+</template>
+
+<script>
+import { defineComponent, ref, nextTick } from 'vue';
+
+export default defineComponent({
+  setup() {
+    const tableRef = ref();
+    const firstNameRef = ref();
+    const lastNameRef = ref();
+    const genderRef = ref();
+    const dataSource = ref([
+      {
+        firstName: 'Mark',
+        lastName: 'Otto',
+        gender: 'Male',
+        id: 'Mark',
+      },
+      {
+        firstName: 'Jacob',
+        lastName: 'Thornton',
+        gender: 'Female',
+        id: 'Jacob',
+      },
+    ]);
+
+    const options = ref(['Female', 'Male']);
+
+    const change = (row, rowIndex, field, value) => {
+      dataSource.value[rowIndex][field] = typeof value === 'object' ? value.value : value;
+      tableRef.value.store.setCellMode(row, rowIndex, field, 'readonly');
+    };
+    const blur = (row, rowIndex, field) => {
+      tableRef.value.store.setCellMode(row, rowIndex, field, 'readonly');
+    };
+
+    const cellClick = (obj) => {
+      tableRef.value.store.setCellMode(obj.row, obj.rowIndex, obj.column.field, 'edit');
+      const refMap = {
+        firstName: firstNameRef,
+        lastName: lastNameRef,
+        gender: genderRef,
+      };
+      const targetRef = refMap[obj.column.field];
+      nextTick(() => {
+        targetRef?.value?.focus();
+      });
+    };
+
+    return { tableRef, firstNameRef, lastNameRef, genderRef, dataSource, options, change, blur, cellClick };
+  },
+});
+</script>
+```
+
+:::
+
 ### 自定义表头
 
 :::demo 通过`d-column`子组件提供的`header`插槽可以实现自定义表头。
 
 ```vue
 <template>
-  <d-table :data="dataSource" :trackBy="(item) => item.firstName">
+  <d-table :data="dataSource">
     <d-column field="firstName">
       <template #header>
         <div>
@@ -553,7 +670,7 @@ export default defineComponent({
 <template>
   <div>
     <d-button @click="handleClick">更新数据</d-button>
-    <d-table :data="emptyData" :show-loading="showLoading" :trackBy="(item) => item.firstName">
+    <d-table :data="emptyData" :show-loading="showLoading">
       <d-column field="firstName" header="First Name"></d-column>
       <d-column field="lastName" header="Last Name"></d-column>
       <d-column field="gender" header="Gender"></d-column>
@@ -619,11 +736,11 @@ export default defineComponent({
 
 ```vue
 <template>
-  <d-table :data="dataSource" table-height="200px" fix-header :trackBy="(item) => item.firstName">
-    <d-column field="firstName" header="First Name"></d-column>
-    <d-column field="lastName" header="Last Name"></d-column>
-    <d-column field="gender" header="Gender"></d-column>
-    <d-column field="date" header="Date of birth"></d-column>
+  <d-table :data="dataSource" table-height="200px" fix-header style="width:100%">
+    <d-column field="firstName" header="First Name" :width="150"></d-column>
+    <d-column field="lastName" header="Last Name" :width="150"></d-column>
+    <d-column field="gender" header="Gender" :width="150"></d-column>
+    <d-column field="date" header="Date of birth" :width="150"></d-column>
   </d-table>
 </template>
 
@@ -697,7 +814,7 @@ export default defineComponent({
 
 ```vue
 <template>
-  <d-table :data="tableDataFixedColumn" table-layout="auto" :trackBy="(item) => item.firstName">
+  <d-table :data="tableDataFixedColumn" table-layout="auto">
     <d-column field="idNo" header="ID Card Number" fixed-left="0px"></d-column>
     <d-column field="firstName" header="First Name"></d-column>
     <d-column field="lastName" header="Last Name"></d-column>
@@ -776,7 +893,7 @@ export default defineComponent({
 
 ```vue
 <template>
-  <d-table :data="dataSource" :span-method="spanMethod" border-type="bordered" :trackBy="(item) => item.firstName">
+  <d-table :data="dataSource" :span-method="spanMethod" border-type="bordered">
     <d-column field="firstName" header="First Name"></d-column>
     <d-column field="lastName" header="Last Name"></d-column>
     <d-column field="gender" header="Gender"></d-column>
@@ -841,7 +958,7 @@ export default defineComponent({
 
 ```vue
 <template>
-  <d-table :data="dataSource" :trackBy="(item) => item.firstName">
+  <d-table :data="dataSource">
     <d-column field="name" header="Name">
       <d-column field="firstName" header="First Name"></d-column>
       <d-column field="lastName" header="Last Name"></d-column>
@@ -897,7 +1014,7 @@ export default defineComponent({
 
 ```vue
 <template>
-  <d-table :data="dataSource" @sort-change="handleSortChange" :trackBy="(item) => item.firstName">
+  <d-table :data="dataSource" @sort-change="handleSortChange">
     <d-column field="firstName" header="First Name"></d-column>
     <d-column field="lastName" header="Last Name" sortable :sort-method="sortNameMethod"></d-column>
     <d-column field="gender" header="Gender"></d-column>
@@ -961,7 +1078,7 @@ export default defineComponent({
 
 ```vue
 <template>
-  <d-table :data="dataSource" :trackBy="(item) => item.firstName">
+  <d-table :data="dataSource">
     <d-column field="firstName" header="First Name"></d-column>
     <d-column field="lastName" header="Last Name" filterable :filter-list="filterList" @filter-change="handleFilterChange"></d-column>
     <d-column
@@ -1051,20 +1168,23 @@ export default defineComponent({
 
 ```vue
 <template>
-  <d-table ref="tableRef" :data="dataSource" :trackBy="(item) => item?.firstName" @expand-change="expandChange">
-    <d-column type="expand">
-      <template #default="rowData">
-        <div>First Name: {{ rowData.row.firstName }}</div>
-        <div>Last Name: {{ rowData.row.lastName }}</div>
-        <div>Gender: {{ rowData.row.gender }}</div>
-        <div>Date of birth: {{ rowData.row.date }}</div>
-      </template>
-    </d-column>
-    <d-column field="firstName" header="First Name"></d-column>
-    <d-column field="lastName" header="Last Name"></d-column>
-    <d-column field="gender" header="Gender"></d-column>
-    <d-column field="date" header="Date of birth"></d-column>
-  </d-table>
+  <div>
+    <d-button @click="toggleRowExpansion" class="mr-m mb-m">toggleRowExpansion</d-button>
+    <d-table ref="tableRef" :data="dataSource" row-key="id" :expand-row-keys="['1', '3']" @expand-change="expandChange">
+      <d-column type="expand">
+        <template #default="rowData">
+          <div>First Name: {{ rowData.row.firstName }}</div>
+          <div>Last Name: {{ rowData.row.lastName }}</div>
+          <div>Gender: {{ rowData.row.gender }}</div>
+          <div>Date of birth: {{ rowData.row.date }}</div>
+        </template>
+      </d-column>
+      <d-column field="firstName" header="First Name"></d-column>
+      <d-column field="lastName" header="Last Name"></d-column>
+      <d-column field="gender" header="Gender"></d-column>
+      <d-column field="date" header="Date of birth"></d-column>
+    </d-table>
+  </div>
 </template>
 
 <script>
@@ -1076,24 +1196,28 @@ export default defineComponent({
 
     const dataSource = ref([
       {
+        id: '1',
         firstName: 'Jacob',
         lastName: 'Thornton',
         gender: 'Female',
         date: '1990/01/12',
       },
       {
+        id: '2',
         firstName: 'Mark',
         lastName: 'Otto',
         date: '1990/01/11',
         gender: 'Male',
       },
       {
+        id: '3',
         firstName: 'Danni',
         lastName: 'Chen',
         gender: 'Female',
         date: '1990/01/13',
       },
       {
+        id: '4',
         firstName: 'Green',
         lastName: 'Gerong',
         gender: 'Male',
@@ -1101,15 +1225,256 @@ export default defineComponent({
       },
     ]);
 
-    onMounted(() => {
+    /* onMounted(() => {
       tableRef.value.store.expandRow(dataSource.value[0]);
-    });
+    }); */
 
     const expandChange = (currentRow, expandedRows) => {
-      console.log('currentRow, expandedRows', currentRow, expandedRows);
+      console.log('currentRow', currentRow);
+      console.log('expandedRows', expandedRows);
     };
 
-    return { dataSource, expandChange, tableRef };
+    const toggleRowExpansion = () => {
+      tableRef.value.store.toggleRowExpansion(dataSource.value[0]);
+    };
+
+    return { dataSource, expandChange, tableRef, toggleRowExpansion };
+  },
+});
+</script>
+```
+
+:::
+
+### 树形表格
+
+:::demo 支持树类型的数据展示。当 row 中包含`children`字段时，被视为树形数据。渲染嵌套数据需要`row-key`。使用`indent`可以控制子节点的缩进。暂不支持树形表格和展开行同时使用，展开行优先级较高。
+
+```vue
+<template>
+  <d-table :indent="32" @check-change="treeCheckChange" :data="baseTreeTableData" row-key="firstName">
+    <d-column type="index">
+      <template #default="scope">
+        {{ `No.${scope.rowIndex + 1}` }}
+      </template>
+    </d-column>
+    <d-column field="firstName" header="First Name" show-overflow-tooltip></d-column>
+    <d-column field="lastName" header="Last Name"></d-column>
+    <d-column field="gender" header="Gender"></d-column>
+    <d-column field="date" header="Date of birth"></d-column>
+  </d-table>
+</template>
+
+<script>
+import { defineComponent, ref } from 'vue';
+
+export default defineComponent({
+  setup() {
+    const baseTreeTableData = ref([
+      {
+        firstName: 'Mark1',
+        lastName: 'Otto',
+        date: '1990/01/11',
+        gender: 'Male1',
+        children: [
+          {
+            firstName: 'Mark2',
+            lastName: 'Otto',
+            date: '1990/01/11',
+            gender: 'Male',
+          },
+          {
+            firstName: 'Mark3',
+            lastName: 'Otto',
+            date: '1990/01/11',
+            gender: 'Male',
+            children: [
+              {
+                firstName: 'Mark31',
+                lastName: 'Otto',
+                date: '1990/01/11',
+                gender: 'Male',
+              },
+              {
+                firstName: 'Mark32',
+                lastName: 'Otto',
+                date: '1990/01/11',
+                gender: 'Male',
+              },
+            ],
+          },
+        ],
+      },
+      {
+        firstName: 'Jacob',
+        lastName: 'Thornton',
+        gender: 'Female',
+        date: '1990/01/12',
+        children: [
+          {
+            firstName: 'Jacob2',
+            lastName: 'Otto',
+            date: '1990/01/11',
+            gender: 'Male',
+          },
+          {
+            firstName: 'Jacob3',
+            lastName: 'Otto',
+            date: '1990/01/11',
+            gender: 'Male',
+            children: [
+              {
+                firstName: 'Jacob31',
+                lastName: 'Otto',
+                date: '1990/01/11',
+                gender: 'Male',
+              },
+              {
+                firstName: 'Jacob32',
+                lastName: 'Otto',
+                date: '1990/01/11',
+                gender: 'Male',
+              },
+            ],
+          },
+        ],
+      },
+      {
+        firstName: 'Danni',
+        lastName: 'Chen',
+        gender: 'Male',
+        date: '1990/01/13',
+      },
+      {
+        firstName: 'green',
+        lastName: 'gerong',
+        gender: 'Male',
+        date: '1990/01/14',
+      },
+    ]);
+
+    const treeCheckChange = (val, row, selection) => {
+      console.log('treeCheckChange', selection);
+    };
+
+    return { baseTreeTableData, treeCheckChange };
+  },
+});
+</script>
+```
+
+:::
+
+### 懒加载
+
+:::demo 使用 lazy 启用懒加载，当滚动表格底部时到触发 loadMore 事件实现懒加载。
+
+```vue
+<template>
+  <d-table :data="dataSource" table-height="200px" :show-loading="showLoading" :lazy="true" @load-more="loadMore">
+    <d-column field="firstName" header="First Name"></d-column>
+    <d-column field="lastName" header="Last Name"></d-column>
+    <d-column field="gender" header="Gender"></d-column>
+    <d-column field="date" header="Date of birth"></d-column>
+  </d-table>
+</template>
+
+<script>
+import { defineComponent, ref } from 'vue';
+
+export default defineComponent({
+  setup() {
+    const showLoading = ref(false);
+    const dataSource = ref([
+      {
+        firstName: 'diy0',
+        lastName: 'Otto',
+        date: '1990/01/11',
+        gender: 'Male',
+      },
+      {
+        firstName: 'diy1',
+        lastName: 'Otto',
+        date: '1990/01/11',
+        gender: 'Male',
+      },
+      {
+        firstName: 'diy2',
+        lastName: 'Thornton',
+        gender: 'Female',
+        date: '1990/01/12',
+      },
+      {
+        firstName: 'diy3',
+        lastName: 'Chen',
+        gender: 'Male',
+        date: '1990/01/13',
+      },
+      {
+        firstName: 'diy4',
+        lastName: 'gerong',
+        gender: 'Male',
+        date: '1990/01/14',
+      },
+      {
+        firstName: 'diy5',
+        lastName: 'lang',
+        gender: 'Male',
+        date: '1990/01/14',
+      },
+      {
+        firstName: 'diy6',
+        lastName: 'li',
+        gender: 'Male',
+        date: '1990/01/14',
+      },
+      {
+        firstName: 'diy7',
+        lastName: 'li',
+        gender: 'Female',
+        date: '1990/01/14',
+      },
+      {
+        firstName: 'diy8',
+        lastName: 'Yu',
+        gender: 'Female',
+        date: '1990/01/14',
+      },
+      {
+        firstName: 'diy9',
+        lastName: 'Yu',
+        gender: 'Female',
+        date: '1990/01/14',
+      },
+    ]);
+
+    let total = 100;
+
+    const loadMore = () => {
+      if (dataSource.value.length >= total || showLoading.value) {
+        return;
+      }
+
+      showLoading.value = true;
+      const moreData = [];
+      const size = dataSource.value.length;
+      for (let i = 0; i < 10; i++) {
+        moreData.push({
+          firstName: 'diy' + (i + size),
+          lastName: 'more data',
+          gender: 'Female',
+          date: '2022/07/20',
+        });
+      }
+
+      // mock ajax
+      setTimeout(() => {
+        showLoading.value = false;
+        dataSource.value = dataSource.value.concat(moreData);
+      }, 500);
+    };
+
+    return { dataSource, loadMore, showLoading };
   },
 });
 </script>
@@ -1119,41 +1484,48 @@ export default defineComponent({
 
 ### Table 参数
 
-| 参数名                | 类型                      | 默认值    | 说明                                                                       | 跳转 Demo                 |
-| :-------------------- | :------------------------ | :-------- | :------------------------------------------------------------------------- | :------------------------ |
-| data                  | `array`                   | []        | 可选，显示的数据                                                           | [基本用法](#基本用法)     |
-| trackBy               | `Function(item): string`  | --        | 必选，用于获取该行数据的特定标记                                           |                           |
-| striped               | `boolean`                 | false     | 可选，是否显示斑马纹间隔                                                   | [表格样式](#表格样式)     |
-| size                  | [TableSize](#tablesize)   | 'sm'      | 可选，表格大小，分别对应行高 40px,48px,56px                                | [表格样式](#表格样式)     |
-| max-width             | `string`                  | --        | 可选，表格最大宽度                                                         |
-| max-height            | `boolean`                 | --        | 可选，表格最大高度                                                         |
-| table-width           | `string`                  | --        | 可选，表格宽度                                                             |
-| table-height          | `string`                  | --        | 可选，表格高度                                                             |
-| row-hovered-highlight | `boolean`                 | true      | 可选，鼠标在该行上时，高亮该行                                             | [表格样式](#表格样式)     |
-| fix-header            | `boolean`                 | false     | 可选，固定头部                                                             | [固定表头](#固定表头)     |
-| show-loading          | `boolean`                 | false     | 可选，显示加载动画                                                         | [空数据模板](#空数据模板) |
-| header-bg             | `boolean`                 | false     | 可选，头部背景                                                             | [表格样式](#表格样式)     |
-| table-layout          | `'fixed' \| 'auto'`       | 'fixed'   | 可选，表格布局，可选值为'auto'                                             | [表格样式](#表格样式)     |
-| span-method           | [SpanMethod](#spanmethod) | --        | 可选，合并单元格的计算方法                                                 | [合并单元格](#合并单元格) |
-| border-type           | [BorderType](#bordertype) | ''        | 可选，表格边框类型，默认有行边框；`bordered`: 全边框；`borderless`: 无边框 | [表格样式](#表格样式)     |
-| empty                 | `string`                  | 'No Data' | 可选，配置未传递表格数据时需要显示的空数据文本                             | [空数据模板](#空数据模板) |
-| show-header           | `boolean`                 | true      | 可选，配置是否显示表头                                                     | [表格样式](#表格样式)     |
-| row-key               | `string`                  | --        | 可选，行数据的 Key，用来优化 Table 渲染                                    |                           |
+| 参数名                | 类型                                              | 默认值    | 说明                                                                                                                                           | 跳转 Demo                                                      |
+| :-------------------- | :------------------------------------------------ | :-------- | :--------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------- |
+| data                  | `array`                                           | []        | 可选，显示的数据                                                                                                                               | [基本用法](#基本用法)                                          |
+| striped               | `boolean`                                         | false     | 可选，是否显示斑马纹间隔                                                                                                                       | [表格样式](#表格样式)                                          |
+| size                  | [TableSize](#tablesize)                           | 'sm'      | 可选，表格大小，分别对应行高 40px,48px,56px                                                                                                    | [表格样式](#表格样式)                                          |
+| max-width             | `string`                                          | --        | 可选，表格最大宽度                                                                                                                             |                                                                |
+| max-height            | `boolean`                                         | --        | 可选，表格最大高度                                                                                                                             |                                                                |
+| table-width           | `string`                                          | --        | 可选，表格宽度                                                                                                                                 |                                                                |
+| table-height          | `string`                                          | --        | 可选，表格高度                                                                                                                                 |                                                                |
+| row-hovered-highlight | `boolean`                                         | true      | 可选，鼠标在该行上时，高亮该行                                                                                                                 | [表格样式](#表格样式)                                          |
+| fix-header            | `boolean`                                         | false     | 可选，固定头部                                                                                                                                 | [固定表头](#固定表头)                                          |
+| show-loading          | `boolean`                                         | false     | 可选，显示加载动画                                                                                                                             | [空数据模板](#空数据模板)                                      |
+| header-bg             | `boolean`                                         | false     | 可选，头部背景                                                                                                                                 | [表格样式](#表格样式)                                          |
+| table-layout          | `'fixed' \| 'auto'`                               | 'fixed'   | 可选，表格布局，可选值为'auto'                                                                                                                 | [表格样式](#表格样式)                                          |
+| span-method           | [SpanMethod](#spanmethod)                         | --        | 可选，合并单元格的计算方法                                                                                                                     | [合并单元格](#合并单元格)                                      |
+| border-type           | [BorderType](#bordertype)                         | ''        | 可选，表格边框类型，默认有行边框；`bordered`: 全边框；`borderless`: 无边框                                                                     | [表格样式](#表格样式)                                          |
+| empty                 | `string`                                          | 'No Data' | 可选，配置未传递表格数据时需要显示的空数据文本                                                                                                 | [空数据模板](#空数据模板)                                      |
+| show-header           | `boolean`                                         | true      | 可选，配置是否显示表头                                                                                                                         | [表格样式](#表格样式)                                          |
+| row-key               | `string \| Function(item, index: number): string` | --        | 可选，行数据的 Key，用来优化 Table 渲染，类型为 string 时，支持多层访问：`item.user.id`，但不支持 `item.user[0].id`，此种情况请使用 Function。 | [表格交互(Function)](#表格交互) <br> [展开行(string)](#展开行) |
+| indent                | `number`                                          | 16        | 可选，展示树形数据时，树节点的缩进                                                                                                             | [树形表格](#树形表格)                                          |
+| lazy                  | `boolean`                                         | false     | 可选，是否懒加载数据（搭配 loadMore 使用）                                                                                                     | [懒加载](#懒加载)                                              |
 
 ### Table 事件
 
-| 事件名           | 回调参数                                                     | 说明                             | 跳转 Demo             |
-| :--------------- | :----------------------------------------------------------- | :------------------------------- | :-------------------- |
-| sort-change      | `Function(obj: { field: string; direction: SortDirection })` | 排序回调事件，返回该列排序信息   | [列排序](#列排序)     |
-| cell-click       | `Function(obj: CellClickArg)`                                | 单元格点击事件，返回单元格信息   | [表格交互](#表格交互) |
-| check-change     | `Function(checked: boolean, row)`                            | 勾选表格行回调事件，返回该行信息 | [表格交互](#表格交互) |
-| check-all-change | `Function(checked: boolean)`                                 | 全选表格行回调事件，返回勾选状态 | [表格交互](#表格交互) |
+| 事件名           | 回调参数                                                     | 说明                                                   | 跳转 Demo             |
+| :--------------- | :----------------------------------------------------------- | :----------------------------------------------------- | :-------------------- |
+| sort-change      | `Function(obj: { field: string; direction: SortDirection })` | 排序回调事件，返回该列排序信息                         | [列排序](#列排序)     |
+| cell-click       | `Function(obj: CellClickArg)`                                | 单元格点击事件，返回单元格信息                         | [表格交互](#表格交互) |
+| check-change     | `Function(checked: boolean, row, selection)`                 | 勾选表格行回调事件，返回该行信息和表格所有选中行数据   | [表格交互](#表格交互) |
+| check-all-change | `Function(checked: boolean, selection)`                      | 全选表格行回调事件，返回勾选状态和表格所有选中行数据   | [表格交互](#表格交互) |
+| row-click        | `Function(obj: RowClickArg)`                                 | 某一行被点击时触发该事件，返回该行信息                 | [表格交互](#表格交互) |
+| load-more        | `Function()`                                                 | 滚动到表格底部触发懒加载事件（需配合 props.lazy 开启） | [懒加载](#懒加载)     |
 
 ### Table 方法
 
-| 方法名         | 类型       | 说明                 |
-| :------------- | :--------- | :------------------- |
-| getCheckedRows | `() => []` | 获取当前选中的行数据 |
+| 方法名             | 类型                                       | 说明                                                                                                             |
+| :----------------- | :----------------------------------------- | :--------------------------------------------------------------------------------------------------------------- |
+| getCheckedRows     | `() => []`                                 | 获取当前选中的行数据                                                                                             |
+| toggleRowExpansion | `(row, expended) => void`                  | 用于可展开的表格，切换某一行的展开状态。 如果使用了第二个参数，则是设置这一行是否展示（expended 为 true 则展开） |
+| toggleRowSelection | `(row, checked) => void`                   | 用于可选择的表格，切换某一行的选中状态。 如果使用了第二个参数，则是设置这一行是否选中（checked 为 true 则选中）  |
+| setCellMode        | `(row, rowIndex, field, cellMode) => void` | 用于可编辑单元格的表格，`cellMode`参数: `readonly`为只读状态， `edit`为编辑状态，单元格根据不同状态渲染不同内容  |
+| resetCellMode      | `() => void`                               | 用于可编辑单元格的表格，重置所有可编辑单元格为只读状态                                                           |
 
 ### Table 插槽
 
@@ -1185,6 +1557,7 @@ export default defineComponent({
 | show-overflow-tooltip | `boolean`                          | false  | 可选，内容过长被隐藏时是否显示 tooltip      |                       |
 | resizeable            | `boolean`                          | false  | 可选，该列宽度是否可调整                    |                       |
 | reserve-check         | `boolean`                          | false  | 可选，是否保留勾选状态                      | [表格交互](#表格交互) |
+| cell-class            | `string`                           | ''     | 可选，该列单元格自定义 class                |                       |
 
 ### Column 事件
 
@@ -1197,10 +1570,12 @@ export default defineComponent({
 
 ### Column 插槽
 
-| 插槽名  | 说明                     | 参数                |
-| :------ | :----------------------- | :------------------ |
-| default | 默认插槽，自定义列内容   | `{ row, rowIndex }` |
-| header  | 表头插槽，自定义表头内容 |                     |
+| 插槽名   | 说明                                                     | 参数                |
+| :------- | :------------------------------------------------------- | :------------------ |
+| default  | 默认插槽，自定义列内容                                   | `{ row, rowIndex }` |
+| header   | 表头插槽，自定义表头内容                                 |                     |
+| cell     | 内容只读态插槽（配合可编辑单元格功能使用），自定义列内容 | `{ row, rowIndex }` |
+| cellEdit | 内容编辑态插槽（配合可编辑单元格功能使用），自定义列内容 | `{ row, rowIndex }` |
 
 ### Table 类型定义
 
@@ -1240,6 +1615,14 @@ interface CellClickArg {
 }
 ```
 
+#### RowClickArg
+
+```ts
+interface RowClickArg {
+  row: DefaultRow;
+}
+```
+
 ### Column 类型定义
 
 <br>
@@ -1247,7 +1630,7 @@ interface CellClickArg {
 #### ColumnType
 
 ```ts
-type ColumnType = 'checkable' | 'index' | '';
+type ColumnType = 'checkable' | 'index' | 'expand' | 'editable' | '';
 ```
 
 #### Formatter

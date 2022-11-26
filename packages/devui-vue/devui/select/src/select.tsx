@@ -1,4 +1,17 @@
-import { defineComponent, provide, reactive, ref, Transition, toRefs } from 'vue';
+import {
+  defineComponent,
+  provide,
+  reactive,
+  ref,
+  Transition,
+  toRefs,
+  getCurrentInstance,
+  onMounted,
+  Teleport,
+  watch,
+  withModifiers,
+  onUnmounted,
+} from 'vue';
 import type { SetupContext } from 'vue';
 import useSelect from './use-select';
 import { selectProps, SelectProps, SelectContext } from './select-types';
@@ -9,27 +22,32 @@ import { useNamespace } from '../../shared/hooks/use-namespace';
 import SelectContent from './components/select-content';
 import useSelectFunction from './composables/use-select-function';
 import './select.scss';
+import { createI18nTranslate } from '../../locale/create';
+import { FlexibleOverlay, Placement } from '../../overlay';
 
 export default defineComponent({
   name: 'DSelect',
   props: selectProps,
   emits: ['toggle-change', 'value-change', 'update:modelValue', 'focus', 'blur', 'remove-tag', 'clear'],
   setup(props: SelectProps, ctx: SetupContext) {
-    const selectRef = ref<HTMLElement>();
+    const app = getCurrentInstance();
+    const t = createI18nTranslate('DSelect', app);
+
+    const selectRef = ref();
     const { isSelectFocus, focus, blur } = useSelectFunction(props, selectRef);
     const {
-      containerRef,
+      selectDisabled,
+      selectSize,
+      originRef,
       dropdownRef,
       isOpen,
       selectCls,
       mergeOptions,
-      inputValue,
       selectedOptions,
       filterQuery,
       emptyText,
       isLoading,
       isShowEmptyText,
-      onClick,
       valueChange,
       handleClear,
       updateInjectOptions,
@@ -37,8 +55,10 @@ export default defineComponent({
       onFocus,
       onBlur,
       debounceQueryFilter,
+      isDisabled,
+      toggleChange,
       isShowCreateOption,
-    } = useSelect(props, ctx, focus, blur, isSelectFocus);
+    } = useSelect(props, selectRef, ctx, focus, blur, isSelectFocus, t);
 
     const scrollbarNs = useNamespace('scrollbar');
     const ns = useNamespace('select');
@@ -48,11 +68,38 @@ export default defineComponent({
       [scrollbarNs.b()]: true,
     };
     const dropdownEmptyCls = ns.em('dropdown', 'empty');
-    ctx.expose({ focus, blur });
+    ctx.expose({ focus, blur, toggleChange });
+    const isRender = ref<boolean>(false);
+    const position = ref<Placement[]>(['bottom-start', 'top-start']);
+    const dropdownWidth = ref('0');
+
+    const updateDropdownWidth = () => {
+      dropdownWidth.value = originRef?.value?.clientWidth ? originRef.value.clientWidth + 'px' : '100%';
+    };
+
+    watch(selectRef, (val) => {
+      if (val) {
+        originRef.value = val.$el;
+        updateDropdownWidth();
+      }
+    });
+
+    onMounted(() => {
+      isRender.value = true;
+      updateDropdownWidth();
+      window.addEventListener('resize', updateDropdownWidth);
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener('resize', updateDropdownWidth);
+    });
+
     provide(
       SELECT_TOKEN,
       reactive({
         ...toRefs(props),
+        selectDisabled,
+        selectSize,
         isOpen,
         selectedOptions,
         filterQuery,
@@ -67,45 +114,55 @@ export default defineComponent({
     );
     return () => {
       return (
-        <div class={selectCls.value} ref={containerRef} onClick={onClick}>
-          <SelectContent ref={selectRef} value={inputValue.value}></SelectContent>
-          <Transition name="fade" ref={dropdownRef}>
-            <div v-show={isOpen.value} class={dropdownCls}>
-              <ul class={listCls} v-show={!isLoading.value}>
-                {isShowCreateOption.value && (
-                  <Option value={filterQuery.value} name={filterQuery.value} create>
-                    {props.multiple ? <Checkbox modelValue={false} label={filterQuery.value} /> : filterQuery.value}
-                  </Option>
-                )}
-                {ctx.slots?.default && ctx.slots.default()}
-                {!ctx.slots?.default &&
-                  mergeOptions.value.length >= 1 &&
-                  mergeOptions.value.map((item, i) => (
-                    <Option
-                      key={i}
-                      value={item.value}
-                      name={item.name}
-                      disabled={props.optionDisabledKey ? !!item[props.optionDisabledKey] : false}>
-                      {props.multiple ? (
-                        <Checkbox
-                          modelValue={item._checked}
-                          label={item.name}
-                          disabled={props.optionDisabledKey ? !!item[props.optionDisabledKey] : false}
-                        />
-                      ) : (
-                        item.name || item.value
-                      )}
-                    </Option>
-                  ))}
-              </ul>
-              {isShowEmptyText.value && (
-                <div>
-                  {ctx.slots?.empty && ctx.slots.empty()}
-                  {!ctx.slots?.empty && <p class={dropdownEmptyCls}>{emptyText.value}</p>}
+        <div
+          class={selectCls.value}
+          onClick={withModifiers(() => {
+            toggleChange(!isOpen.value);
+          }, ['stop'])}>
+          <SelectContent ref={selectRef}></SelectContent>
+          <Teleport to="body">
+            <Transition name="fade">
+              <FlexibleOverlay
+                v-model={isRender.value}
+                ref={dropdownRef}
+                origin={originRef.value}
+                align="start"
+                offset={4}
+                position={position.value}
+                style={{
+                  visibility: isOpen.value ? 'visible' : 'hidden',
+                  'z-index': isOpen.value ? 'var(--devui-z-index-dropdown, 1052)' : -1,
+                }}>
+                <div class={dropdownCls} style={{ width: `${dropdownWidth.value}`, visibility: isOpen.value ? 'visible' : 'hidden' }}>
+                  <ul class={listCls} v-show={!isLoading.value}>
+                    {isShowCreateOption.value && (
+                      <Option value={filterQuery.value} name={filterQuery.value} create>
+                        {props.multiple ? <Checkbox modelValue={false} label={filterQuery.value} /> : filterQuery.value}
+                      </Option>
+                    )}
+                    {ctx.slots?.default && ctx.slots.default()}
+                    {!ctx.slots?.default &&
+                      mergeOptions.value.length >= 1 &&
+                      mergeOptions.value.map((item) => (
+                        <Option key={item.value} value={item.value} name={item.name} disabled={isDisabled(item)}>
+                          {props.multiple ? (
+                            <Checkbox modelValue={item._checked} label={item.name} disabled={isDisabled(item)} />
+                          ) : (
+                            item.name || item.value
+                          )}
+                        </Option>
+                      ))}
+                  </ul>
+                  {isShowEmptyText.value && (
+                    <div>
+                      {ctx.slots?.empty && ctx.slots.empty()}
+                      {!ctx.slots?.empty && <p class={dropdownEmptyCls}>{emptyText.value}</p>}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          </Transition>
+              </FlexibleOverlay>
+            </Transition>
+          </Teleport>
         </div>
       );
     };

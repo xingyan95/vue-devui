@@ -1,10 +1,11 @@
 /**
  * 控制窗口打开收起
  */
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, Ref } from 'vue';
 import { PopupTypes, CascaderProps } from '../src/cascader-types';
 import { dropdownOpenClass } from './use-cascader-class';
-export const popupHandles = (props: CascaderProps): PopupTypes => {
+import { onClickOutside } from '@vueuse/core';
+export const popupHandles = (props: CascaderProps, overlayRef: Ref, origin: Ref): PopupTypes => {
   const menuShow = ref(false);
   const menuOpenClass = ref('');
   const disabled = computed(() => props.disabled); // select是否被禁用
@@ -14,7 +15,9 @@ export const popupHandles = (props: CascaderProps): PopupTypes => {
   };
 
   const openPopup = () => {
-    if (disabled.value) {return;}
+    if (disabled.value) {
+      return;
+    }
     menuShow.value = !menuShow.value;
     updateStopDefaultType();
   };
@@ -22,6 +25,14 @@ export const popupHandles = (props: CascaderProps): PopupTypes => {
   watch(menuShow, (status) => {
     menuOpenClass.value = dropdownOpenClass(status);
   });
+
+  onClickOutside(
+    overlayRef,
+    () => {
+      menuShow.value = false;
+    },
+    { ignore: [origin] }
+  );
 
   return {
     menuShow,

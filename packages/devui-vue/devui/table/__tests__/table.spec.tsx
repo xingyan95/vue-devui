@@ -1,14 +1,16 @@
 import { mount } from '@vue/test-utils';
 import DTable from '../src/table';
 import DColumn from '../src/components/column/column';
+import { Button } from '../../button';
 import { useNamespace } from '../../shared/hooks/use-namespace';
 import { nextTick, ref } from 'vue';
+import { Input } from '../../input';
+import 'intersection-observer';
 
-let data: Array<Record<string, any>> = [];
+let data: Array<Record<string, unknown>> = [];
 const ns = useNamespace('table', true);
 const noDotNs = useNamespace('table');
 const flexibleOverlayNs = useNamespace('flexible-overlay', true);
-const tooltipNs = useNamespace('tooltip', true);
 
 describe('d-table', () => {
   beforeEach(() => {
@@ -194,7 +196,7 @@ describe('d-table', () => {
   it('merge cell', async () => {
     const wrapper = mount({
       setup() {
-        const spanMethod = ({ row, column, rowIndex, columnIndex }) => {
+        const spanMethod = ({ rowIndex, columnIndex }) => {
           if (rowIndex === 0 && columnIndex === 0) {
             return { rowspan: 1, colspan: 2 };
           }
@@ -278,7 +280,7 @@ describe('d-table', () => {
     const lastTd = tableBody.find('tr').findAll('td')[3];
     expect(lastTd.text()).toBe('1990/01/11');
 
-    const sortIcon = lastTh.find('.sort-clickable');
+    const sortIcon = lastTh.find(ns.e('sort-clickable'));
     await sortIcon.trigger('click');
     expect(lastTd.text()).toBe('1990/01/14');
     expect(handleSortChange).toBeCalled();
@@ -287,6 +289,8 @@ describe('d-table', () => {
     expect(lastTd.text()).toBe('1990/01/12');
     expect(handleSortChange).toBeCalled();
   });
+
+  it.todo('filter multiple work well');
 
   it('filter', async () => {
     const handleSingleChange = jest.fn();
@@ -417,4 +421,262 @@ describe('d-table', () => {
     expect(wrapper.find(ns.e('thead')).exists()).toBeFalsy();
     wrapper.unmount();
   });
+
+  it('table method test work', async () => {
+    const wrapper = mount({
+      setup() {
+        const tableRef = ref();
+        const checkedRows = ref([]);
+        const getCheckedRow = () => {
+          checkedRows.value = tableRef.value.store.getCheckedRows();
+        };
+        const toggleRowSelection = () => {
+          tableRef.value.store.toggleRowSelection(data[1]);
+          checkedRows.value = tableRef.value.store.getCheckedRows();
+        };
+        const toggleRowExpansion = () => {
+          tableRef.value.store.toggleRowExpansion(data[2]);
+        };
+        const checkable = (row) => {
+          return row.lastName.endsWith('n');
+        };
+        return () => (
+          <div>
+            <Button onClick={getCheckedRow} class="mr-m mb-m">
+              Get CheckedRows
+            </Button>
+            <Button onClick={toggleRowSelection} class="mr-m mb-m">
+              toggleRowSelection
+            </Button>
+            <Button onClick={toggleRowExpansion} class="mr-m mb-m">
+              toggleRowExpansion
+            </Button>
+            <DTable ref={tableRef} data={data} row-key="firstName" expand-row-keys={['Jacob', 'Mark']}>
+              <DColumn type="expand"></DColumn>
+              <DColumn type="checkable" width="40" checkable={checkable} reserve-check></DColumn>
+              <DColumn field="firstName" header="First Name"></DColumn>
+              <DColumn field="lastName" header="Last Name"></DColumn>
+              <DColumn field="gender" header="Gender"></DColumn>
+              <DColumn field="date" header="Date of birth"></DColumn>
+            </DTable>
+            <p>{checkedRows.value.length}</p>
+          </div>
+        );
+      },
+    });
+
+    await nextTick();
+
+    // getCheckedRows
+    const p = wrapper.find('p');
+    expect(p.element.textContent).toBe('0');
+    const buttons = wrapper.findAll('button');
+    await buttons[0].trigger('click');
+    await nextTick();
+    expect(p.element.textContent).toBe('2');
+
+    // toggleRowSelection
+    await buttons[1].trigger('click');
+    expect(p.element.textContent).toBe('3');
+    await buttons[1].trigger('click');
+    expect(p.element.textContent).toBe('2');
+
+    // toggleRowExpansion
+    let expandedList = wrapper.findAll('.expanded');
+    expect(expandedList.length).toBe(2);
+    await buttons[2].trigger('click');
+    expandedList = wrapper.findAll('.expanded');
+    expect(expandedList.length).toBe(3);
+    await buttons[2].trigger('click');
+    expandedList = wrapper.findAll('.expanded');
+    expect(expandedList.length).toBe(2);
+  });
+
+  it('table tree test work', async () => {
+    const wrapper = mount({
+      setup() {
+        const baseTreeTableData = [
+          {
+            firstName: 'Mark1',
+            lastName: 'Otto',
+            date: '1990/01/11',
+            gender: 'Male1',
+            children: [
+              {
+                firstName: 'Mark2',
+                lastName: 'Otto',
+                date: '1990/01/11',
+                gender: 'Male',
+              },
+              {
+                firstName: 'Mark3',
+                lastName: 'Otto',
+                date: '1990/01/11',
+                gender: 'Male',
+              },
+            ],
+          },
+        ];
+
+        return () => (
+          <div>
+            <DTable indent={32} data={baseTreeTableData} row-key="firstName">
+              <DColumn type="index"></DColumn>
+              <DColumn field="firstName" header="First Name" show-overflow-tooltip></DColumn>
+              <DColumn field="lastName" header="Last Name"></DColumn>
+              <DColumn field="gender" header="Gender"></DColumn>
+              <DColumn field="date" header="Date of birth"></DColumn>
+            </DTable>
+          </div>
+        );
+      },
+    });
+
+    await nextTick();
+    await nextTick();
+
+    const indent = wrapper.find(ns.e('indent'));
+    expect(indent.attributes('style')).toContain('padding-left: 32px;');
+
+    const trs = wrapper.findAll('tr');
+    expect(trs.length).toBe(4);
+
+    let hiddenTrs = wrapper.findAll('.is-hidden');
+    expect(hiddenTrs.length).toBe(2);
+
+    const toggleFolderIcon = wrapper.find(ns.e('tree-operate'));
+    await toggleFolderIcon.trigger('click');
+    await nextTick();
+    hiddenTrs = wrapper.findAll('.is-hidden');
+    expect(hiddenTrs.length).toBe(0);
+
+    await toggleFolderIcon.trigger('click');
+    await nextTick();
+    hiddenTrs = wrapper.findAll('.is-hidden');
+    expect(hiddenTrs.length).toBe(2);
+  });
+
+  it('table edit cell work', async () => {
+    const wrapper = mount({
+      setup() {
+        const tableRef = ref();
+        const firstNameRef = ref();
+        const baseTreeTableData = ref([
+          {
+            firstName: 'Mark',
+            lastName: 'Otto',
+            gender: 'Male',
+            id: 'Mark',
+          },
+          {
+            firstName: 'Jacob',
+            lastName: 'Thornton',
+            gender: 'Female',
+            id: 'Jacob',
+          },
+        ]);
+
+        const changeInput = (row, rowIndex, field, value) => {
+          baseTreeTableData.value[rowIndex][field] = value;
+          tableRef.value.store.setCellMode(row, rowIndex, field, 'readonly');
+        };
+
+        const cellClick = (obj) => {
+          tableRef.value.store.setCellMode(obj.row, obj.rowIndex, obj.column.field, 'edit');
+          nextTick(() => {
+            firstNameRef?.value?.focus();
+          });
+        };
+        const blur = (row, rowIndex, field) => {
+          tableRef.value.store.setCellMode(row, rowIndex, field, 'readonly');
+        };
+
+        return () => (
+          <div>
+            <DTable ref={tableRef} data={baseTreeTableData.value} row-key="id" onCellClick={cellClick}>
+              <DColumn
+                field="firstName"
+                header="First Name"
+                type="editable"
+                v-slots={{
+                  cell: (scope) => <span>{scope.row.firstName}</span>,
+                  cellEdit: (scope) => (
+                    <Input
+                      ref={firstNameRef}
+                      placeholder="请输入"
+                      modelValue={scope.row.firstName}
+                      onChange={(value) => changeInput(scope.row, scope.rowIndex, 'firstName', value)}
+                      onBlur={() => blur(scope.row, scope.rowIndex, 'firstName')}
+                    />
+                  ),
+                }}></DColumn>
+              <DColumn field="lastName" header="Last Name"></DColumn>
+              <DColumn field="gender" header="Gender"></DColumn>
+            </DTable>
+          </div>
+        );
+      },
+    });
+
+    await nextTick();
+    await nextTick();
+
+    const table = wrapper.find(ns.b());
+    expect(table.exists()).toBeTruthy();
+    const tableBody = table.find(ns.e('tbody'));
+    const tdItems = tableBody.find('tr').findAll('td');
+    expect(tdItems.length).toBe(3);
+    const cellItem = tdItems[0].find(ns.e('cell'));
+    expect(cellItem.exists()).toBeTruthy();
+    expect(cellItem.classes().includes('editable-cell')).toBe(true);
+
+    await tdItems[0].trigger('click');
+    const input = cellItem.find('input');
+    expect(input.exists()).toBeTruthy();
+    input.setValue('Mark1');
+    await input.trigger('keydown.enter');
+
+    const inputNew = cellItem.find('input');
+    expect(inputNew.exists()).toBeFalsy();
+    expect(cellItem.text()).toBe('Mark1');
+  });
+
+  it('table lazy mode work', async () => {
+    const wrapper = mount({
+      setup() {
+        const handleLoadMore = () => {
+          // TODO: add exception to test emit event(Jest don't have IntersectionObserver)
+          // The 'intersection-observer' polyfill don't work in Jest env? It's just prevent error report in DTable.
+          data.push({
+            firstName: 'loadMore',
+            lastName: 'loadMore',
+            gender: 'Female',
+            date: '1990/01/12',
+          });
+        };
+
+        return () => (
+          <DTable data={data} table-height="100px" lazy={true} onLoadMore={handleLoadMore}>
+            <DColumn field="firstName" header="First Name"></DColumn>
+            <DColumn field="lastName" header="Last Name"></DColumn>
+            <DColumn field="gender" header="Gender"></DColumn>
+            <DColumn field="date" header="Date of birth"></DColumn>
+          </DTable>
+        );
+      },
+    });
+
+    await nextTick();
+    await nextTick();
+    const table = wrapper.find(ns.b());
+    const lazyEle = table.find(ns.e('lazy__flag'));
+
+    // test lazyFlagElement exist
+    expect(lazyEle.exists()).toBeTruthy();
+    wrapper.unmount();
+  });
+
+  it.todo('fix header work well');
+
+  it.todo('drag column work well');
 });

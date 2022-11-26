@@ -69,7 +69,7 @@ export default defineComponent({
           <div class={checkboxCls}>
             <label title={labelTitle} onClick={handleClick} class={labelCls} style={{ width: itemWidth ? '100%' : 'auto' }}>
               <input
-                name={props.name || props.value}
+                name={(props.name || props.value) as string}
                 class={ns.e('input')}
                 type="checkbox"
                 {...inputProps}
@@ -89,7 +89,7 @@ export default defineComponent({
                   </g>
                 </svg>
               </span>
-              {props.label || ctx.slots.default?.()}
+              <span class={ns.e('label-text')}>{props.label || ctx.slots.default?.()}</span>
             </label>
           </div>
         </div>

@@ -6,11 +6,11 @@ export type IconPosition = 'right' | 'left';
 export const searchProps = {
   size: {
     type: String as PropType<Size>,
-    default: '',
+    default: 'md',
   },
   placeholder: {
     type: String,
-    default: '请输入关键字',
+    default: '',
   },
   maxLength: {
     type: Number,

@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { ref, reactive, nextTick } from 'vue';
 import DSelect from '../src/select';
+import { Button } from '../../button';
 import { useNamespace } from '../../shared/hooks/use-namespace';
 
 const ns = useNamespace('select', true);
@@ -35,39 +36,38 @@ describe('select', () => {
         return () => <DSelect v-model={value.value} options={options} placeholder="这是默认选择框"></DSelect>;
       },
     });
+
     const container = wrapper.find(baseClass);
-    let dropdown = wrapper.find(dropdownCls);
-    let listItems = wrapper.findAll(selectItemCls);
+    let dropdown = document.querySelector(dropdownCls);
     const input = wrapper.find<HTMLInputElement>(selectInputCls);
     const arrow = wrapper.find(arrowCls);
 
     expect(container.exists()).toBeTruthy();
-    expect(dropdown.isVisible()).toBeFalsy();
+    expect(dropdown).toBeFalsy();
     expect(arrow.isVisible()).toBeTruthy();
-    expect(listItems.length).toBe(3);
-    expect(listItems[0].classes()).toContain('active');
     expect(input.attributes('placeholder')).toBe('这是默认选择框');
     await nextTick();
     expect(input.element.value).toBe('1');
 
     await input.trigger('click');
     await nextTick();
-    // isVisible不会自动更新需要重新获取
-    dropdown = wrapper.find(dropdownCls);
-    expect(dropdown.isVisible()).toBeTruthy();
+    dropdown = document.querySelector(dropdownCls);
+    expect(dropdown?.style.visibility).toBe('visible');
     expect(container.classes()).toContain(selectOpenCls);
+    let listItems = document.querySelectorAll(selectItemCls);
+    expect(listItems.length).toBe(3);
+    expect(listItems[0].classList).toContain('active');
 
-    await listItems[2].trigger('click');
+    await listItems[2].dispatchEvent(new Event('click'));
     await nextTick();
 
-    // isVisible不会自动更新需要重新获取
-    dropdown = wrapper.find(dropdownCls);
+    dropdown = document.querySelector(dropdownCls);
     expect(value.value).toBe('string');
-    expect(dropdown.isVisible()).toBeFalsy();
+    expect(dropdown?.style?.visibility).toBe('hidden');
     expect(input.element.value).toBe('string');
     // class不会自动更新需要重新获取
-    listItems = wrapper.findAll(selectItemCls);
-    expect(listItems[2].classes()).toContain('active');
+    listItems = document.querySelectorAll(selectItemCls);
+    expect(listItems[2].classList).toContain('active');
     wrapper.unmount();
   });
 
@@ -128,8 +128,8 @@ describe('select', () => {
     expect(valueChange).toBeCalledTimes(0);
     expect(value.value).toBe(2);
 
-    const listItems = wrapper.findAll(selectItemCls);
-    await listItems[2].trigger('click');
+    const listItems = document.querySelectorAll(selectItemCls);
+    await listItems[2].dispatchEvent(new Event('click'));
 
     expect(toggleChange).toBeCalledTimes(2);
     expect(valueChange).toBeCalledTimes(1);
@@ -147,10 +147,10 @@ describe('select', () => {
     });
 
     const container = wrapper.find(baseClass);
-    const item = container.findAll(selectItemCls);
 
     await container.trigger('click');
-    await item[1].trigger('click');
+    const item = document.querySelectorAll(selectItemCls);
+    await item[1].dispatchEvent(new Event('click'));
     expect(value.value).toBe(2);
     value.value = 1;
     await nextTick();
@@ -199,36 +199,67 @@ describe('select', () => {
     });
 
     const container = wrapper.find(baseClass);
-    const item = container.findAll(selectItemCls);
 
     await container.trigger('click');
     await nextTick();
-    expect(item[1].classes()).toContain('disabled');
-    await item[1].trigger('click');
+    const item = document.querySelectorAll(selectItemCls);
+    expect(item[1].classList).toContain('disabled');
+    await item[1].dispatchEvent(new Event('click'));
     expect(value.value).toEqual([]);
-    // todo 此处遗留，如果继续点击第二个或者更多选项，得到的value.value依然是[]; 原因为下拉面板使用Transition组件导致。
-    await item[0].trigger('click');
+    await item[0].dispatchEvent(new Event('click'));
     expect(value.value).toEqual([0]);
     wrapper.unmount();
   });
 
-  it('select multiple work', async () => {
+  it('select multiple and multiple-limit work', async () => {
     const value = ref([]);
     const options = reactive([0, 1, 2]);
     const wrapper = mount({
       setup() {
-        return () => <DSelect v-model={value.value} options={options} multiple={true}></DSelect>;
+        return () => <DSelect v-model={value.value} options={options} multiple={true} multipleLimit={3}></DSelect>;
       },
     });
     const container = wrapper.find(baseClass);
-    const item = container.findAll(selectItemCls);
 
     await container.trigger('click');
     await nextTick();
-    await item[0].trigger('click');
-    await item[1].trigger('click');
-    await item[2].trigger('click');
+    const item = document.querySelectorAll(selectItemCls);
+    await item[0].dispatchEvent(new Event('click'));
+    await item[1].dispatchEvent(new Event('click'));
+    await item[2].dispatchEvent(new Event('click'));
     expect(value.value).toEqual([0, 1, 2]);
+    // multiple-limit TODO，item的class没法动态更新
+
+    wrapper.unmount();
+  });
+
+  it('select toggleChange work', async () => {
+    const value = ref([]);
+    const options = reactive([0]);
+    const demoSelect = ref(null);
+    const toggleChange = () => {
+      demoSelect.value?.toggleChange(true);
+    };
+    const wrapper = mount({
+      setup() {
+        return () => (
+          <div>
+            <DSelect ref={demoSelect} v-model={value.value} options={options}></DSelect>
+            <Button onClick={toggleChange}>展开</Button>
+          </div>
+        );
+      },
+    });
+    let dropdown = document.querySelector(dropdownCls);
+    expect(dropdown).toBeFalsy();
+
+    const button = wrapper.find('button');
+    button.trigger('click');
+    await nextTick();
+    dropdown = document.querySelector(dropdownCls);
+    expect(dropdown?.style.width).toBe('100%');
+    expect(dropdown?.style.visibility).toBe('visible');
+
     wrapper.unmount();
   });
 
@@ -260,7 +291,6 @@ describe('select', () => {
     });
 
     const container = wrapper.find(baseClass);
-    const items = container.findAll(selectItemCls);
     const section = wrapper.find(multipleCls);
     const multipleInput = wrapper.find(multipleInputCls);
     expect(section.exists()).toBeTruthy();
@@ -268,7 +298,8 @@ describe('select', () => {
 
     await container.trigger('click');
     await nextTick();
-    await items[0].trigger('click');
+    const items = document.querySelectorAll(selectItemCls);
+    await items[0].dispatchEvent(new Event('click'));
     expect(value.value).toStrictEqual([1]);
     const input = container.find<HTMLInputElement>(selectInputCls);
     expect(input.element.value).toBe('');
@@ -292,13 +323,13 @@ describe('select', () => {
     });
 
     const container = wrapper.find(baseClass);
-    const items = container.findAll(selectItemCls);
 
     await container.trigger('click');
     await nextTick();
-    await items[0].trigger('click');
-    await items[1].trigger('click');
-    await items[2].trigger('click');
+    const items = document.querySelectorAll(selectItemCls);
+    await items[0].dispatchEvent(new Event('click'));
+    await items[1].dispatchEvent(new Event('click'));
+    await items[2].dispatchEvent(new Event('click'));
     const tags = wrapper.findAll(tagBaseClass);
     expect(tags.length).toBe(2);
     const tag1 = tags[0].find('.remove-button');
@@ -320,13 +351,13 @@ describe('select', () => {
       },
     });
     const container = wrapper.find(baseClass);
-    const items = container.findAll(selectItemCls);
 
     await container.trigger('click');
     await nextTick();
-    await items[0].trigger('click');
-    await items[1].trigger('click');
-    await items[2].trigger('click');
+    const items = document.querySelectorAll(selectItemCls);
+    await items[0].dispatchEvent(new Event('click'));
+    await items[1].dispatchEvent(new Event('click'));
+    await items[2].dispatchEvent(new Event('click'));
     const tags = wrapper.findAll(tagBaseClass);
     expect(tags.length).toBe(2);
     await tags[1].trigger('mouseenter');
@@ -381,7 +412,7 @@ describe('select', () => {
         setTimeout(() => {
           options.data = list.filter((item) => {
             return item.toLowerCase().includes(query.toLowerCase());
-          });
+          }) as never[];
           loading.value = false;
         }, 200);
       } else {
@@ -442,6 +473,7 @@ describe('select', () => {
     }, 300);
     wrapper.unmount();
   });
+
   it('select no-data-text no-match-text work', async () => {
     const value = ref([]);
     const list = new Array(6).fill(0).map((item, i) => `Option ${i + 1}`);
@@ -455,14 +487,14 @@ describe('select', () => {
 
     await input.trigger('click');
     await nextTick();
-    const items = wrapper.findAll(selectItemCls);
+    const items = document.querySelectorAll(selectItemCls);
     expect(items.length).toBe(0);
-    const noDataItem = wrapper.find(dropdownEmptyCls);
-    expect(noDataItem.exists()).toBeTruthy();
-    expect(noDataItem.text()).toBe('无数据');
+    const noDataItem = document.querySelector(dropdownEmptyCls);
+    expect(noDataItem).toBeTruthy();
+    expect(noDataItem?.textContent).toBe('无数据');
 
     await wrapper.setProps({ options: list });
-    const newItems = wrapper.findAll(selectItemCls);
+    const newItems = document.querySelectorAll(selectItemCls);
     expect(newItems.length).toBe(6);
     const newNoDataItem = wrapper.find(dropdownEmptyCls);
     expect(newNoDataItem.exists()).toBeFalsy();
@@ -490,7 +522,7 @@ describe('select', () => {
       if (bool) {
         remoteLoading.value = true;
         setTimeout(() => {
-          options.data = list;
+          options.data = list as never[];
           remoteLoading.value = false;
         }, 3000);
       }
@@ -506,11 +538,11 @@ describe('select', () => {
 
     await container.trigger('click');
     await nextTick();
-    const items = wrapper.findAll(selectItemCls);
+    const items = document.querySelectorAll(selectItemCls);
     expect(items.length).toBe(0);
-    const remoteLoadingItem = wrapper.find(dropdownEmptyCls);
-    expect(remoteLoadingItem.exists()).toBeTruthy();
-    expect(remoteLoadingItem.text()).toBe('加载中');
+    const remoteLoadingItem = document.querySelector(dropdownEmptyCls);
+    expect(remoteLoadingItem).toBeTruthy();
+    expect(remoteLoadingItem?.textContent).toBe('加载中...');
     setTimeout(() => {
       const newLoadingItem = wrapper.find(dropdownEmptyCls);
       expect(newLoadingItem.exists()).toBeFalsy();

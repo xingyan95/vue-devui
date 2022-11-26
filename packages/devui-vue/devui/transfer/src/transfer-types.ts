@@ -1,14 +1,15 @@
-import { PropType, ExtractPropTypes } from "vue";
+import { PropType, ExtractPropTypes, VNode, RenderFunction } from 'vue';
 
 export interface IItem {
-  value: string;
+  value: string | number;
   name: string;
   disabled: boolean;
 }
 
 export interface ICheckList {
-  value: string;
+  value: string | number;
   checked: boolean;
+  name: string;
 }
 
 export interface IDargItemAndDropItem {
@@ -18,76 +19,85 @@ export interface IDargItemAndDropItem {
   dropItem: IItem;
 }
 
-export type TKey = string;
+export type TKey = string | number;
+
+export type filterValue = boolean | ((data: IItem, key: string) => IItem[]);
 
 export const transferProps = {
+  modelValue: {
+    type: Array as PropType<string | number[]>,
+    default: () => [],
+  },
+  data: {
+    type: Array as PropType<IItem[]>,
+    default: () => [],
+  },
   sourceDefaultChecked: {
-    type: Array as PropType<string[]>,
-    default: () => []
+    type: Array as PropType<string | number[]>,
+    default: () => [],
   },
   targetDefaultChecked: {
-    type: Array as PropType<string[]>,
-    default: () => []
+    type: Array as PropType<string | number[]>,
+    default: () => [],
   },
   titles: {
     type: Array as PropType<string[]>,
-    default: () => ['sourceHeader', 'targetHeader']
+    default: () => ['sourceHeader', 'targetHeader'],
   },
   sourceOption: {
     type: Array as PropType<IItem[]>,
-    default: () => []
+    default: () => [],
   },
   targetOption: {
     type: Array as PropType<IItem[]>,
-    default: () => []
+    default: () => [],
   },
-  isSearch: {
-    type: Boolean,
-    default: false
+  filter: {
+    type: [Boolean, Function] as PropType<filterValue>,
+    default: false,
   },
   height: {
     type: Number,
-    default: 320
+    default: 320,
   },
   unit: {
     type: String,
-    default: '项'
+    default: '',
   },
   placeholder: {
     type: String,
-    default: '请输入关键词搜索'
+    default: '',
   },
   isKeyupSearch: {
     type: Boolean,
-    default: true
+    default: true,
   },
   isSourceDrag: {
     type: Boolean,
-    default: false
+    default: false,
   },
   isTargetDrag: {
     type: Boolean,
-    default: false
+    default: false,
   },
-  searching: {
-    type: Function as PropType<(data: IItem[], keyword: TKey) => void>
+  search: {
+    type: Function as PropType<(data: IItem[], keyword: TKey) => void>,
   },
-  sourceSortMethods: {
-    type: Function as PropType<(data: IItem[]) => IItem[]>
-  },
-  targetSortMethods: {
-    type: Function as PropType<(data: IItem[]) => IItem[]>
+  sortMethods: {
+    type: Function as PropType<(data: IItem[]) => IItem[]>,
   },
   dragstart: {
-    type: Function as PropType<(event: DragEvent, item: IItem) => void>
+    type: Function as PropType<(event: DragEvent, item: IItem) => void>,
   },
   drop: {
-    type: Function as PropType<(event: DragEvent, item: IItem) => void>
+    type: Function as PropType<(event: DragEvent, item: IItem) => void>,
   },
   dragend: {
-    type: Function as PropType<(event: DragEvent, item: IItem) => void>
-  }
+    type: Function as PropType<(event: DragEvent, item: IItem) => void>,
+  },
+  renderContent: {
+    type: Function as PropType<(h: RenderFunction, option: IItem) => VNode>,
+  },
 } as const;
 
 export type TTransferProps = ExtractPropTypes<typeof transferProps>;
-

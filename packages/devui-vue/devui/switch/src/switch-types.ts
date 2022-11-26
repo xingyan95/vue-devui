@@ -1,12 +1,14 @@
 import type { ExtractPropTypes, PropType, ComputedRef } from 'vue';
 
+export type SwitchSize = 'sm' | 'md' | 'lg';
+
 export const switchProps = {
   modelValue: {
-    type: Boolean,
+    type: [String, Number, Boolean] as PropType<string | number | boolean>,
     default: false,
   },
   size: {
-    type: String as PropType<'sm' | 'md' | 'lg'>,
+    type: String as PropType<SwitchSize>,
     default: 'md',
   },
   color: {
@@ -25,11 +27,21 @@ export const switchProps = {
     type: Function as PropType<(v: boolean) => void>,
     default: undefined,
   },
+  activeValue: {
+    type: [String, Number, Boolean] as PropType<string | number | boolean>,
+    default: true,
+  },
+  inactiveValue: {
+    type: [String, Number, Boolean] as PropType<string | number | boolean>,
+    default: false,
+  },
 } as const;
 
 export type SwitchProps = ExtractPropTypes<typeof switchProps>;
 
 export type UseSwitchFn = {
-  checked: ComputedRef<boolean>;
+  checked: ComputedRef<string | number | boolean>;
+  switchDisabled: ComputedRef<boolean>;
+  switchSize: ComputedRef<SwitchSize>;
   toggle: () => void;
 };

@@ -15,11 +15,10 @@ export function useEvent(
   props: NotificationProps,
   emit: EmitEventFn
 ): { interrupt: VoidFn; removeReset: VoidFn; close: VoidFn; handleDestroy: VoidFn } {
-  let timer = null;
+  let timer: NodeJS.Timeout | null = null;
   let timestamp: number;
-
   const close = () => {
-    clearTimeout(timer);
+    timer && clearTimeout(timer);
     timer = null;
     props.onClose?.();
     emit('update:modelValue', false);
@@ -33,7 +32,7 @@ export function useEvent(
   };
 
   const removeReset = () => {
-    if (!props.modelValue) {
+    if (props.modelValue) {
       const remainTime = props.duration - (Date.now() - timestamp);
       timer = setTimeout(close, remainTime);
     }

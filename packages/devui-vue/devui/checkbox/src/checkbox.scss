@@ -2,21 +2,18 @@
 
 $font-size-map: (
   lg: $devui-font-size-lg,
-  md: $devui-font-size-lg,
+  md: $devui-font-size-md,
   sm: $devui-font-size-sm,
-  xs: $devui-font-size-sm,
 );
 $checkbox-width-map: (
-  lg: 16px,
+  lg: 18px,
   md: 16px,
   sm: 14px,
-  xs: 14px,
 );
 $checkbox-label-height-map: (
-  lg: 40px,
-  md: 36px,
-  sm: 32px,
-  xs: 28px,
+  lg: $devui-size-lg,
+  md: $devui-size-md,
+  sm: $devui-size-sm,
 );
 .#{$devui-prefix}-checkbox {
   position: relative;
@@ -114,7 +111,7 @@ $checkbox-label-height-map: (
     user-select: none;
     border: 1px solid $devui-line;
     border-radius: $devui-border-radius;
-    background: linear-gradient($devui-brand, $devui-brand) no-repeat center/0%;
+    background: linear-gradient($devui-brand, $devui-brand) no-repeat 50%/0;
     margin-right: 8px;
     vertical-align: text-bottom;
 
@@ -177,15 +174,18 @@ $checkbox-label-height-map: (
 
   & label {
     position: relative;
-    font-weight: normal;
-    height: 18px;
-    line-height: 18px;
+    font-weight: 400;
+    height: 16px;
+    line-height: 16px;
     cursor: pointer;
     color: $devui-text;
     margin: 0;
-    display: block;
-    @each $size in ('lg', 'md', 'sm', 'xs') {
+    display: flex;
+    align-items: center;
+    @each $size in ('lg', 'md', 'sm') {
       &.#{$devui-prefix}-checkbox--#{$size} {
+        display: flex;
+        align-items: center;
         font-size: map-get($font-size-map, #{$size});
 
         .#{$devui-prefix}-checkbox__material {
@@ -200,7 +200,6 @@ $checkbox-label-height-map: (
 
         &.#{$devui-prefix}-checkbox--bordered {
           height: map-get($checkbox-label-height-map, #{$size});
-          line-height: map-get($checkbox-label-height-map, #{$size});
           padding: 0 15px 0 10px;
         }
       }
@@ -215,7 +214,19 @@ $checkbox-label-height-map: (
       display: inline-block;
       box-sizing: content-box;
       vertical-align: top;
+
+      &.#{$devui-prefix}-checkbox__material {
+        flex-shrink: 0; // keep the checkbox icon width
+      }
+
+      &.#{$devui-prefix}-checkbox__label-text {
+        flex-shrink: 1; // just use flex box to shrink text width. let text ellipsis
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
     }
+
   }
 
   // 禁用状态透明色

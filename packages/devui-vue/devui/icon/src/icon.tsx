@@ -6,6 +6,7 @@ import { useIconDom } from './composables/use-icon-dom';
 export default defineComponent({
   name: 'DIcon',
   props: iconProps,
+  emits: ['click'],
   setup(props: IconProps, ctx: SetupContext) {
     const { disabled, operable } = toRefs(props);
     const { iconDom } = useIconDom(props, ctx);
@@ -14,12 +15,13 @@ export default defineComponent({
       [ns.e('container')]: true,
       [ns.m('disabled')]: disabled.value,
       [ns.m('operable')]: operable.value,
+      [ns.m('no-slots')]: !Object.keys(ctx.slots).length,
     }));
     const onClick = (e: Event) => {
       if (disabled.value) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
+        return;
       }
+      ctx.emit('click', e);
     };
 
     return () => (

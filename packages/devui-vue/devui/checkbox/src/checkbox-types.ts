@@ -1,7 +1,7 @@
 import { PropType, InjectionKey, Ref, ExtractPropTypes, ComputedRef } from 'vue';
 
 type Direction = 'row' | 'column';
-type Size = 'lg' | 'md' | 'sm' | 'xs';
+type Size = 'lg' | 'md' | 'sm';
 
 const commonProps = {
   name: {
@@ -125,7 +125,7 @@ interface checkboxGroupInjection {
   showAnimation: Ref<boolean>;
   beforeChange: undefined | ((isChecked: boolean, v: string | undefined) => boolean | Promise<boolean>);
   toggleGroupVal: (v: string | number | undefined) => void;
-  isItemChecked: (v: string | number | undefined) => boolean;
+  isItemChecked: (v: string | number | undefined) => boolean | undefined;
   itemWidth: Ref<number | undefined>;
   direction: Ref<Direction>;
   size: Ref<string>;

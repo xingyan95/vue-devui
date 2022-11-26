@@ -9,9 +9,11 @@ import {
   getCurrentInstance,
   onBeforeMount,
   SetupContext,
+  h,
 } from 'vue';
+import type { VNode } from 'vue';
 import { tableColumnProps, TableColumnProps, TableColumn } from './column-types';
-import { TABLE_TOKEN, Table, DefaultRow } from '../../table-types';
+import { TABLE_TOKEN, ITableInstanceAndDefaultRow } from '../../table-types';
 import { createColumn, useRender } from './use-column';
 
 let columnIdInit = 1;
@@ -21,21 +23,16 @@ export default defineComponent({
   props: tableColumnProps,
   emits: ['filter-change', 'resize-start', 'resizing', 'resize-end'],
   setup(props: TableColumnProps, ctx: SetupContext) {
-    const { reserveCheck } = toRefs(props);
-    const owner = inject(TABLE_TOKEN) as Table<DefaultRow>;
+    const owner = inject(TABLE_TOKEN) as ITableInstanceAndDefaultRow;
     const isSubColumn = ref(false);
     const { columnOrTableParent, getColumnIndex } = useRender();
-    const parent: any = columnOrTableParent.value;
+    const parent = columnOrTableParent.value as TableColumn & ITableInstanceAndDefaultRow;
 
     const instance = getCurrentInstance() as TableColumn;
     instance.columnId = `${parent.tableId || parent.columnId}_column_${columnIdInit++}`;
 
     // 构造 column
-    const column = createColumn(
-      instance.columnId,
-      toRefs(props),
-      ctx
-    );
+    const column = createColumn(instance.columnId, toRefs(props), ctx);
 
     instance.columnConfig = column;
 
@@ -44,7 +41,7 @@ export default defineComponent({
     });
 
     onMounted(() => {
-      const children = isSubColumn.value ? parent.vnode.el.children : owner?.hiddenColumns.value?.children;
+      const children = isSubColumn.value ? parent?.vnode?.el?.children : owner?.hiddenColumns.value?.children;
       const columnIndex = getColumnIndex(children || [], instance.vnode.el);
       columnIndex > -1 && owner?.store.insertColumn(column, isSubColumn.value ? parent.columnConfig : null);
 
@@ -81,19 +78,27 @@ export default defineComponent({
     });
 
     return () => {
-      const defaultSlot = ctx.slots.default?.({
-        row: {},
-        column: {},
-        $index: -1,
-      });
+      try {
+        const defaultSlot = ctx.slots.default?.({
+          row: {},
+          column: {},
+          $index: -1,
+        });
 
-      return <div>
-        {
-          Array.isArray(defaultSlot)
-            ? defaultSlot.filter(child => child.type.name === 'DColumn').map(child => <>{child}</>)
-            : <div />
-        }
-      </div>;
+        return (
+          <div>
+            {defaultSlot && Array.isArray(defaultSlot) ? (
+              defaultSlot
+                .filter((child) => (child.type as VNode['type'] & { name: string }).name === 'DColumn')
+                .map((child) => <>{child}</>)
+            ) : (
+              <div />
+            )}
+          </div>
+        );
+      } catch {
+        return h('div', []);
+      }
     };
   },
 });

@@ -1,17 +1,8 @@
 import { Ref } from 'vue';
-import { IInnerTreeNode, IUseCore } from './use-tree-types';
+import { IInnerTreeNode, IUseCore, IUseDisable } from './use-tree-types';
 
-export interface IUseDisable {
-  disableSelectNode: (node: IInnerTreeNode) => void;
-  disableCheckNode: (node: IInnerTreeNode) => void;
-  disableToggleNode: (node: IInnerTreeNode) => void;
-  enableSelectNode: (node: IInnerTreeNode) => void;
-  enableCheckNode: (node: IInnerTreeNode) => void;
-  enableToggleNode: (node: IInnerTreeNode) => void;
-}
-
-export default function() {
-  return function useDisable(data: Ref<IInnerTreeNode[]>, core: IUseCore): IUseDisable {
+export function useDisable() {
+  return function useDisableFn(data: Ref<IInnerTreeNode[]>, core: IUseCore): IUseDisable {
     const { setNodeValue } = core;
 
     const disableSelectNode = (node: IInnerTreeNode): void => {

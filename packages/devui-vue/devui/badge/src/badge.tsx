@@ -3,6 +3,7 @@ import { badgeProps, BadgeProps } from './badge-types';
 import { useNamespace } from '../../shared/hooks/use-namespace';
 import './badge.scss';
 
+type IStyleMap = Pick<BadgeProps, 'bgColor' | 'textColor'>;
 export default defineComponent({
   name: 'DBadge',
   props: badgeProps,
@@ -16,18 +17,22 @@ export default defineComponent({
         props.status && ns.m(props.status),
         ctx.slots.default && props.position && ns.m(props.position),
         ctx.slots.default && ns.m('fixed'),
+        props.hidden ? ns.m('hidden') : ns.m('show'),
       ].join(' ');
     });
 
     const style = computed(() => {
-      const styleMap = {
+      const styleMap: IStyleMap = {
         bgColor: 'background',
         textColor: 'color',
       };
-      const ret = Object.keys(styleMap).reduce((result, key) => {
-        props[key] && (result[styleMap[key]] = props[key]);
-        return result;
-      }, {});
+      const ret = (Object.keys(styleMap) as (keyof IStyleMap)[])
+        .reduce((result, key) => {
+          if (props[key]) {
+            result[styleMap[key] as string] = props[key];
+          }
+          return result;
+        }, {} as { [key: string]: unknown });
       if (ctx.slots.default && props.offset) {
         const [x, y]: Array<number> = props.offset;
         const [yName, xName] = props.position.split('-');

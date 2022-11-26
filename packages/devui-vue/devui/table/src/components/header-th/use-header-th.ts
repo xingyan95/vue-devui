@@ -1,6 +1,6 @@
-import { ref, Ref, computed, getCurrentInstance, inject, onMounted } from 'vue';
+import { ref, Ref, computed, getCurrentInstance, inject, onMounted, nextTick } from 'vue';
 import { Column, FilterConfig, SortDirection } from '../column/column-types';
-import { TABLE_TOKEN } from '../../table-types';
+import { TABLE_TOKEN, ITableInstanceAndDefaultRow } from '../../table-types';
 import { UseSort, UseFilter, UseBaseRender, UseDragColumnWidth } from './header-th-types';
 
 export function useBaseRender(column: Ref<Column>): UseBaseRender {
@@ -13,15 +13,16 @@ export function useBaseRender(column: Ref<Column>): UseBaseRender {
 }
 
 export function useSort(column: Ref<Column>): UseSort {
-  const table = inject(TABLE_TOKEN);
+  const table = inject(TABLE_TOKEN) as ITableInstanceAndDefaultRow;
   const store = table.store;
-  const direction = ref<SortDirection>(column.value.sortDirection);
+  const direction = ref<SortDirection>(column.value.sortDirection || '');
   const sortClass = computed(() => ({
     'sort-active': Boolean(direction.value),
   }));
   const thInstance = getCurrentInstance();
-  thInstance && store.states.thList.push(thInstance);
-  onMounted(() => {
+  thInstance && store.collectTh(thInstance);
+  onMounted(async () => {
+    await nextTick();
     column.value.sortable && column.value.sortDirection && store.sortData?.(direction.value, column.value.sortMethod);
   });
   const execClearSortOrder = () => {
@@ -53,7 +54,7 @@ export function useFilter(column: Ref<Column>): UseFilter {
   }));
   const handleFilter = (val: FilterConfig | FilterConfig[]) => {
     filter.value = val;
-    column.value.ctx.emit('filter-change', val);
+    column.value.ctx?.emit('filter-change', val);
   };
 
   return { filterClass, handleFilter };
@@ -84,7 +85,7 @@ export function useDragColumnWidth(elementRef: Ref<HTMLElement>, column: Ref<Col
   let initialWidth = 0;
   let mouseDownScreenX = 0;
   let resizeBarElement: HTMLElement;
-  const table = inject(TABLE_TOKEN);
+  const table = inject(TABLE_TOKEN) as ITableInstanceAndDefaultRow;
   const dragClass = ref('');
   const resizing = ref(false);
   const tableElement = table.tableRef;
@@ -96,7 +97,7 @@ export function useDragColumnWidth(elementRef: Ref<HTMLElement>, column: Ref<Col
     if (resizeBarElement) {
       resizeBarElement.style.left = `${finalWidth + elementRef.value.offsetLeft}px`;
     }
-    column.value.ctx.emit('resizing', { width: finalWidth });
+    column.value.ctx?.emit('resizing', { width: finalWidth });
   };
 
   const onMouseup = (e: MouseEvent) => {
@@ -110,7 +111,7 @@ export function useDragColumnWidth(elementRef: Ref<HTMLElement>, column: Ref<Col
     tableElement?.value.classList.remove('table-selector');
     dragClass.value = '';
     tableElement?.value.removeChild(resizeBarElement);
-    column.value.ctx.emit('resize-end', { width: finalWidth, beforeWidth: initialWidth });
+    column.value.ctx?.emit('resize-end', { width: finalWidth, beforeWidth: initialWidth });
     document.removeEventListener('mouseup', onMouseup);
     document.removeEventListener('mousemove', onMousemove);
   };
@@ -118,7 +119,7 @@ export function useDragColumnWidth(elementRef: Ref<HTMLElement>, column: Ref<Col
   const onMousedown = (e: MouseEvent) => {
     const isHandle = (e.target as HTMLElement).classList.contains('resize-handle');
     if (isHandle) {
-      column.value.ctx.emit('resize-start');
+      column.value.ctx?.emit('resize-start');
       const initialOffset = elementRef.value.offsetLeft;
       initialWidth = elementRef.value.clientWidth;
       mouseDownScreenX = e.clientX;

@@ -2,9 +2,9 @@
 
 $border-change-time: 300ms;
 $border-change-function: cubic-bezier(0.645, 0.045, 0.355, 1);
-$select-input-height-sm: 24px;
-$select-input-height-md: 28px;
-$select-input-height-lg: 44px;
+$select-input-height-sm: $devui-size-sm;
+$select-input-height-md: $devui-size-md;
+$select-input-height-lg: $devui-size-lg;
 $select-arrow-width: 28px;
 $transition-base-time: 0.25s;
 $select-dropdown-max-height: 300px;
@@ -18,6 +18,7 @@ $select-item-min-height: 36px;
 .#{$devui-prefix}-select {
   position: relative;
   width: 100%;
+  font-size: $devui-font-size;
 
   &__selection {
     &:hover {
@@ -27,13 +28,41 @@ $select-item-min-height: 36px;
 
   &--open,
   &--focus {
-    .#{$devui-prefix}-select__selection {
+    .#{$devui-prefix}-select__selection:not(.#{$devui-prefix}-select__selection--error) {
       border-color: $devui-form-control-line-active;
 
       &:hover {
         border-color: $devui-form-control-line-active;
       }
     }
+  }
+
+  .#{$devui-prefix}-tag {
+    margin: 4px 0 4px 4px;
+    .#{$devui-prefix}-tag__item.#{$devui-prefix}-tag--md {
+      height: 18px;
+      line-height: 16px;
+    }
+
+    .#{$devui-prefix}-tag__item.#{$devui-prefix}-tag--default {
+      background-color: $devui-label-bg;
+    }
+  }
+
+  &--sm {
+    font-size: $devui-font-size-sm;
+    .#{$devui-prefix}-tag {
+      margin: 2px 0 2px 4px;
+
+      .#{$devui-prefix}-tag__item.#{$devui-prefix}-tag--sm {
+        height: 18px;
+        line-height: 16px;
+      }
+    }
+  }
+
+  &--lg {
+    font-size: $devui-font-size-lg;
   }
 }
 
@@ -71,9 +100,13 @@ $select-item-min-height: 36px;
     color: $devui-disabled-text;
   }
 
-  .#{$devui-prefix}-select__arrow {
+  .#{$devui-prefix}-select__arrow,
+  .#{$devui-prefix}-select__clear {
     cursor: not-allowed;
-    color: $devui-disabled-text;
+
+    svg path {
+      fill: $devui-disabled-text;
+    }
   }
 }
 
@@ -101,12 +134,22 @@ $select-item-min-height: 36px;
   border-radius: $devui-border-radius;
   background-color: $devui-form-control-bg;
   color: $devui-text;
+
+  &--error {
+    border-color: $devui-danger-line;
+    background-color: $devui-danger-bg;
+
+    &:hover {
+      border-color: $devui-danger-line;
+    }
+  }
 }
 
 .#{$devui-prefix}-select__multiple {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
+  padding-right: 28px;
   cursor: pointer;
   .#{$devui-prefix}-select__multiple--input {
     display: flex;
@@ -123,7 +166,7 @@ $select-item-min-height: 36px;
   color: $devui-text;
   vertical-align: middle;
   outline: none;
-  background-color: $devui-form-control-bg;
+  background: none;
   box-sizing: border-box;
   border: none;
   @include border-transition();
@@ -181,27 +224,30 @@ $select-item-min-height: 36px;
 .#{$devui-prefix}-select__clear {
   display: none;
 
-  &:hover {
-    color: $devui-icon-fill-active;
+  svg path {
+    fill: $devui-text-weak;
   }
+}
+
+.#{$devui-prefix}-select__clear--feedback {
+  right: 28px;
 }
 
 .#{$devui-prefix}-select__arrow {
   transform: rotate3d(0, 0, 1, 0deg);
   transition: transform $transition-base-time ease-out;
+
+  svg path {
+    fill: $devui-icon-text;
+  }
+}
+
+.#{$devui-prefix}-select__arrow--feedback {
+  right: 28px;
 }
 
 .#{$devui-prefix}-select__dropdown {
-  position: absolute;
-  width: calc(100% - 2px);
   overflow: auto;
-  top: 100%;
-  left: 0;
-  margin: 5px 0;
-  border-radius: $devui-border-radius;
-  background: $devui-base-bg;
-  box-shadow: 0 2px 5px 0 $devui-shadow;
-  z-index: 999;
 }
 
 .#{$devui-prefix}-select__dropdown-list {
@@ -218,7 +264,7 @@ $select-item-min-height: 36px;
   min-height: $select-item-min-height;
   line-height: 1.5;
   width: 100%;
-  padding: 10px;
+  padding: 8px 12px;
   clear: both;
   overflow: hidden;
   white-space: nowrap;
@@ -243,6 +289,25 @@ $select-item-min-height: 36px;
     background-color: $devui-disabled-bg;
     color: $devui-disabled-text;
   }
+}
+
+.#{$devui-prefix}-select--sm .#{$devui-prefix}-select__item {
+  font-size: $devui-font-size-sm;
+
+  .#{$devui-prefix}-checkbox .#{$devui-prefix}-checkbox__material {
+    width: $devui-font-size-sm;
+    height: $devui-font-size-sm;
+
+    & > svg {
+      width: $devui-font-size-sm;
+      height: $devui-font-size-sm;
+    }
+  }
+}
+
+.#{$devui-prefix}-select--lg .#{$devui-prefix}-select__item {
+  font-size: $devui-font-size-lg;
+  padding: 11px 10px;
 }
 
 .#{$devui-prefix}-scrollbar {
@@ -283,4 +348,32 @@ $select-item-min-height: 36px;
   text-align: center;
   font-size: $select-item-font-size;
   color: $devui-disabled-text;
+}
+
+.#{$devui-prefix}-select__group {
+  position: relative;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  &:not(:last-of-type) {
+    padding-bottom: 24px;
+
+    &::after {
+      content: '';
+      position: absolute;
+      display: block;
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      height: 1px;
+      background: $devui-dividing-line;
+    }
+  }
+
+  &-title {
+    padding: 4px 12px;
+    font-size: $select-item-font-size;
+    color: $devui-aide-text;
+  }
 }
